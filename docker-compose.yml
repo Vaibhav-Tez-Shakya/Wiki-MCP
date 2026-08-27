@@ -1,0 +1,34 @@
+services:
+
+  wiki-mcp-all:
+    build:
+      context: .
+    container_name: wiki-mcp-all
+    environment:
+      MCP_TIER: all
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  wiki-mcp-tier2:
+    build:
+      context: .
+    container_name: wiki-mcp-tier2
+    environment:
+      MCP_TIER: tier2
+      PORT: 8001
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  wiki-mcp-tier3:
+    build:
+      context: .
+    container_name: wiki-mcp-tier3
+    environment:
+      MCP_TIER: tier3
+      PORT: 8002
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
