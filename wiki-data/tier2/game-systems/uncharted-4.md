@@ -1,95 +1,208 @@
 ﻿# Uncharted 4 — Game Systems
 
-## Leveling and XP
+## Progression Overview
 
-Uncharted 4 does not use a conventional RPG character-level or XP progression system.
+Uncharted 4 uses a chapter-based narrative progression system rather than a conventional RPG character-level system.
 
-Player progression is primarily based on story and chapter progression.
+- Story chapters are the primary progression units.
+- There is no conventional RPG character-level progression.
+- There is no conventional character XP progression system.
+- Combat and traversal progression are primarily determined by the current chapter, available equipment, difficulty, and player skill.
+
+### Progression Benchmarks
+
+| Metric | Wiki Value |
+|---|---|
+| Character Level | No conventional RPG level |
+| XP System | No conventional character XP progression |
+| Primary Progression Unit | Story Chapter |
+| Level 27 | Not applicable as an RPG level |
+| Difficulty | Selectable difficulty |
+| Endgame | Replay, collectibles, challenges, and additional modes |
 
 ## Character Progression
 
-Nathan Drake does not have a persistent RPG-style character level.
+Player progression is represented through:
 
-Progression is primarily represented through:
-- Story progression
-- Chapter progression
-- Weapon availability
-- Encounter progression
+- Story chapters
+- Chapter objectives
+- Available weapons
+- Combat encounters
+- Traversal sequences
+- Exploration
+- Collectibles
 - Player skill
 
-## Chapter Progression
+There is no conventional character-stat progression comparable to DD2, Skyrim, or The Witcher 3.
 
-The Games Wiki organizes Uncharted 4 content around chapters.
+## Skill System
 
-Chapter order provides the primary progression structure for the campaign.
+Uncharted 4 does not use a conventional RPG skill tree.
 
-## Skills and Abilities
+Player effectiveness primarily depends on:
 
-Uncharted 4 does not use a conventional RPG skill tree or character-stat progression system.
-
-Player effectiveness primarily depends on player skill, movement, stealth, combat tactics, and environmental interaction.
+- Aim
+- Movement
+- Positioning
+- Stealth
+- Combat decisions
+- Weapon selection
+- Environmental awareness
+- Player execution
 
 ## Equipment Progression
 
-Weapons and equipment are primarily associated with gameplay encounters and story progression.
+Weapons are obtained or made available according to the current gameplay sequence.
 
-Equipment availability should not be interpreted as an RPG-style permanent gear-level system.
+Important equipment categories include:
+
+- Pistols
+- Rifles
+- Shotguns
+- Sniper weapons
+- Explosives
+- Melee tools
+- Traversal equipment
+
+Equipment availability varies by encounter and chapter.
 
 ## Combat Progression
 
 Combat effectiveness depends on:
-- Weapon availability
-- Enemy encounters
-- Stealth
+
+- Weapon selection
+- Ammunition
 - Positioning
-- Environmental interaction
+- Stealth
+- Enemy composition
 - Player execution
+- Difficulty setting
+
+There is no conventional RPG character-stat progression.
 
 ## Difficulty Scaling
 
 Uncharted 4 provides selectable difficulty settings.
 
-Higher difficulty increases the challenge of combat encounters and makes player execution, positioning, stealth, and resource management more important.
+Difficulty affects combat challenge and survivability.
+
+Difficulty should be treated as a separate gameplay variable rather than character-level progression.
 
 ## Quest and Chapter Progression
 
-The primary campaign progression model is chapter-based.
+Uncharted 4 is organized around story chapters.
 
-The existing wiki contains individual chapter information that can be used to determine the player's position in the campaign.
+Wiki chapter data can contain:
+
+- Chapter names
+- Chapter order
+- Story progression
+- Chapter objectives
+- Source information
+
+Chapter progression is therefore the primary progression benchmark.
 
 ## World Progression
 
 World progression is primarily story-driven.
 
-New environments, locations, encounters, and gameplay situations become available as the player advances through chapters.
+Progression occurs through:
+
+- Story chapters
+- Exploration sections
+- Combat encounters
+- Traversal sequences
+- Environmental puzzles
+
+The game does not use an open-world RPG progression structure.
+
+## Collectibles
+
+Optional exploration can include:
+
+- Treasures
+- Journal entries
+- Optional conversations
+- Other collectibles
+
+Collectibles provide exploration objectives but do not function as RPG character progression.
 
 ## Resource Systems
 
 Important gameplay resources include:
-- Weapons
+
 - Ammunition
-- Grenades
-- Health opportunities
-- Environmental cover
-- Stealth opportunities
+- Weapons
+- Explosives
+- Health/survivability
+- Traversal opportunities
+- Environmental resources
+
+Resource availability is strongly dependent on the current encounter.
 
 ## Endgame Progression
 
-After the main campaign, progression is primarily based on replaying chapters, higher difficulty, collectibles, and additional challenge-oriented activities rather than character-level advancement.
+Post-story activities can include:
 
-## Comparison Notes
+- Chapter replay
+- Collectible completion
+- Higher difficulty playthroughs
+- Challenge-oriented play
+- Speed-oriented play
+- New Game Plus where supported
 
-For cross-game comparison use:
+These do not create a conventional RPG level progression curve.
+
+## Comparison Variables
+
+| System | Uncharted 4 |
+|---|---|
+| Leveling | No conventional RPG level |
+| XP | No conventional character XP |
+| Progression Unit | Story Chapter |
+| Class System | None |
+| Skill Progression | Player Skill |
+| Combat | Weapons + Positioning + Execution |
+| Equipment | Chapter/Encounter-based |
+| Difficulty | Selectable Difficulty |
+| Quest Progression | Story Chapters |
+| World Progression | Story + Exploration |
+| Endgame | Replay + Collectibles + Difficulty |
+
+## Cross-Game Comparison Policy
+
+Uncharted 4 should not be assigned an artificial character level for comparison with DD2, Skyrim, Dying Light 2, or The Witcher 3.
+
+A valid comparison should instead use:
+
+- Story progression
 - Chapter progression
 - Difficulty
-- Weapon availability
-- Combat encounters
-- Stealth
+- Combat complexity
+- Equipment availability
+- Exploration
 - Player skill
-- Story progression
 
-Do not convert an Uncharted 4 chapter into an invented RPG character level.
+For example:
+
+> "DD2 level 27 = Uncharted 4 level X"
+
+is not a meaningful factual comparison because Uncharted 4 does not use the same character-level progression model.
+
+## Numerical Data Policy
+
+Do not create an artificial XP curve or character-level equivalence.
+
+Numerical comparisons should use documented chapter numbers, difficulty settings, collectibles, or other explicit metrics.
 
 ## Sources
 
-Use the existing Uncharted 4 chapter pages in this wiki for specific chapter progression information. Verify exact gameplay mechanics against authoritative game documentation.
+- Games Wiki Uncharted 4 chapter documents
+- Individual chapter pages
+- Uncharted 4 progression documentation
+
+## Verification Status
+
+Uncharted 4 is structurally different from the RPG-oriented games in this wiki.
+
+Chapter progression and difficulty are the primary useful comparison dimensions.

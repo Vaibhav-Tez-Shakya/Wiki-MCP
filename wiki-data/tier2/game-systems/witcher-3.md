@@ -1,136 +1,219 @@
-﻿# The Witcher 3 — Game Systems
+﻿# The Witcher 3: Wild Hunt — Game Systems
 
 ## Leveling and XP
 
-The Witcher 3 uses a conventional character-level progression system.
+The Witcher 3 uses a character-level progression system.
 
-Experience is primarily gained through quests and gameplay activities.
+- Character level increases through experience gained during gameplay.
+- Quests are an important source of experience.
+- Character level affects access to equipment and progression.
+- Many quests have documented recommended character levels.
+- Recommended quest levels are useful indicators of intended progression.
 
-Character level is an important indicator of expected progression.
+### Leveling Benchmarks
+
+| Metric | Wiki Value |
+|---|---|
+| Starting Level | 1 |
+| Character Level | Experience-based |
+| XP Sources | Quests and gameplay activities |
+| Quest Levels | Many quests have recommended levels |
+| Level 27 | Compare against documented quest-level progression |
+| Level Cap | Requires authoritative verification |
 
 ## Character Progression
 
-Character progression is determined by:
-- Character level
-- Ability points
+Character progression includes:
+
+- Character Level
+- Ability Points
 - Skills
-- Mutagens
-- Weapons
-- Armor
-- Gear upgrades
-- Alchemy
-
-## Suggested Quest Levels
-
-The Games Wiki contains suggested-level information for Witcher 3 quests.
-
-Suggested quest levels provide an important reference for determining the intended progression point for individual quests.
-
-Examples should be retrieved from the corresponding Witcher 3 quest pages rather than inferred.
-
-## Skill and Ability System
-
-Ability points can be invested into different ability categories.
-
-Ability choices allow players to specialize Geralt toward different combat and gameplay approaches.
-
-## Equipment Progression
-
-Weapons and armor contribute significantly to combat effectiveness.
-
-Higher-level and improved equipment generally supports progression into stronger areas and quests.
-
-## Combat Progression
-
-Combat effectiveness depends on:
-- Character level
-- Abilities
+- Mutations
+- Equipment
 - Weapons
 - Armor
 - Signs
 - Potions
 - Oils
-- Bombs
-- Player skill
+- Build specialization
+
+Character level alone does not represent complete combat power.
+
+## Skills and Abilities
+
+Ability points are used to develop Geralt's abilities.
+
+Major categories include:
+
+- Combat
+- Signs
+- Alchemy
+- General abilities
+
+Different ability combinations support different builds.
+
+## Mutations
+
+The Blood and Wine expansion introduces mutations.
+
+Mutations provide additional character specialization and interact with abilities to support advanced builds.
+
+## Equipment Progression
+
+Equipment is a major component of progression.
+
+Important equipment includes:
+
+- Swords
+- Armor
+- Crossbows
+- Relic equipment
+- Witcher gear
+- Enchanted equipment
+
+Equipment quality and level should be considered alongside character level.
+
+## Witcher Gear
+
+Witcher gear provides specialized equipment sets with upgrade stages.
+
+Gear progression can substantially affect combat effectiveness.
+
+## Combat Progression
+
+Combat effectiveness depends on:
+
+- Character level
+- Skills
+- Abilities
+- Equipment
+- Weapons
+- Armor
+- Signs
+- Potions
+- Oils
+- Enemy type
+- Player execution
 
 ## Difficulty Scaling
 
 The Witcher 3 provides selectable difficulty settings.
 
-Combat challenge depends on difficulty, character progression, equipment, abilities, and enemy strength.
+Combat challenge is affected by:
+
+- Difficulty setting
+- Enemy level
+- Enemy type
+- Character level
+- Equipment
+- Abilities
+- Preparation
 
 ## Quest Progression
 
-Quest progression is strongly connected to suggested quest levels.
+The Witcher 3 contains:
 
-The existing wiki quest files can provide:
-- Quest name
-- Suggested level
-- Location
-- Quest category
-- Story context
-- Source link
+- Main quests
+- Secondary quests
+- Witcher contracts
+- Treasure hunts
+- Expansion quests
+
+Many quests have recommended character levels.
+
+Recommended quest levels should be treated as explicit progression evidence when present in individual quest documents.
 
 ## World Progression
 
 World progression is connected to:
+
 - Main quests
-- Side quests
-- Regions
-- Exploration
+- Secondary quests
 - Contracts
-- Treasure hunts
-- Story progression
+- Exploration
+- Locations
+- Character progression
+- Equipment
+- Expansion content
 
 ## Resource Systems
 
 Important resources include:
-- Crowns
-- Experience
+
+- Gold
 - Health
+- Stamina
 - Adrenaline
-- Weapons
-- Armor
-- Alchemy ingredients
-- Crafting materials
 - Potions
 - Oils
 - Bombs
+- Food
+- Crafting materials
+- Alchemy ingredients
 
 ## Crafting and Alchemy
 
-Crafting and alchemy provide additional progression and preparation options.
+Major systems include:
 
-Alchemy can provide potions, oils, bombs, and other gameplay advantages.
-
-Crafting allows weapons and armor to be created or improved.
+- Weapon crafting
+- Armor crafting
+- Alchemy
+- Potion creation
+- Oil creation
+- Bomb creation
+- Equipment upgrades
 
 ## Endgame Progression
 
-Endgame progression can include:
+Endgame activities can include:
+
 - Higher-level quests
 - Expansion content
-- Equipment upgrades
-- Ability development
-- Contracts
-- Exploration
+- Witcher gear upgrades
+- Ability optimization
+- Mutations
+- Equipment optimization
 - New Game Plus
 
-## Comparison Notes
+## Comparison Variables
 
-For cross-game comparison use:
-- Character level
-- Suggested quest level
-- Ability progression
-- Equipment
-- Difficulty
-- Enemy strength
-- Quest progression
-- Region progression
-- Alchemy and crafting
+| System | Witcher 3 |
+|---|---|
+| Leveling | Character Level + XP |
+| Class System | Build specialization |
+| Skill Progression | Ability Points + Skills |
+| Advanced Progression | Mutations |
+| Combat | Skills + Signs + Equipment |
+| Equipment | Weapons + Armor + Witcher Gear |
+| Crafting | Crafting + Alchemy |
+| Difficulty | Difficulty + Enemy Level |
+| Quest Progression | Main + Secondary + Contracts |
+| Quest Benchmark | Recommended Quest Level |
+| World Progression | Regions + Quests + Exploration |
+| Endgame | Expansion + Gear + Build |
 
-Witcher 3 is especially useful as a leveling comparison because the wiki contains explicit suggested levels for individual quests.
+## Cross-Game Comparison Policy
+
+The Witcher 3 provides useful numerical progression evidence through documented quest recommended levels.
+
+However:
+
+> "DD2 level 27 = Witcher 3 level X"
+
+must not be presented as a factual conversion unless an explicit conversion methodology exists in the wiki.
+
+## Numerical Data Policy
+
+Use individual quest documents for exact recommended levels.
+
+Do not invent XP curves or cross-game level conversions.
 
 ## Sources
 
-Use the individual Witcher 3 quest pages in this wiki as the source of specific quest-level information. Verify exact numerical mechanics against authoritative game documentation.
+- Games Wiki Witcher 3 quest documents
+- Individual quest recommended-level data
+- Witcher 3 progression documentation
+
+## Verification Status
+
+Recommended quest levels should be retrieved from individual quest documents before making numerical progression claims.

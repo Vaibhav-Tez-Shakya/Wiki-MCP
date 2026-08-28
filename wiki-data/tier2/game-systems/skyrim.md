@@ -2,116 +2,270 @@
 
 ## Leveling and XP
 
-Skyrim uses a skill-based leveling system.
+Skyrim uses a skill-based character progression system.
 
-Skills increase through their use during gameplay. Increasing skills contributes to overall character level progression.
+- Character level begins at 1.
+- Skills increase through gameplay activities associated with that skill.
+- Increasing skills contributes to overall character level progression.
+- Character level-ups provide an opportunity to increase Health, Magicka, or Stamina.
+- Level-ups also provide access to perk points.
+- The character's overall level is therefore influenced by the skills the player chooses to develop.
+- Unlike DD2, Skyrim does not use a separate vocation-rank system for its core character progression.
 
-Character leveling provides opportunities to improve attributes and acquire perks.
+### Leveling Benchmarks
+
+| Metric | Wiki Value |
+|---|---|
+| Starting Level | 1 |
+| Character Level | Determined by skill progression |
+| Skill Progression | Individual skills increase through use |
+| Attribute Progression | Health, Magicka, or Stamina |
+| Perk Progression | Perk points obtained through character leveling |
+| Level 27 | Requires explicit progression data before numerical comparison |
+| Level Cap | Requires authoritative verification |
 
 ## Character Progression
 
-Character progression is determined by:
-- Character level
-- Individual skill levels
+Character progression is composed of several interacting systems:
+
+- Character Level
+- Individual Skill Levels
 - Perks
+- Attributes
 - Equipment
 - Spells
 - Enchantments
 - Crafting
-- Character build
+- Character Build
+
+There is no mandatory fixed character class. Players develop their character by improving the skills and abilities they use.
 
 ## Skill System
 
-Skyrim has multiple skills covering:
+Skyrim uses a broad skill-based progression model.
+
+Skills cover three major gameplay areas:
+
 - Combat
 - Magic
 - Stealth
-- Crafting
-- Utility gameplay
 
-Skills can be developed independently according to the player's actions.
+Important skills include:
+
+- One-Handed
+- Two-Handed
+- Archery
+- Block
+- Heavy Armor
+- Light Armor
+- Smithing
+- Alchemy
+- Enchanting
+- Destruction
+- Restoration
+- Conjuration
+- Illusion
+- Alteration
+- Sneak
+- Lockpicking
+- Pickpocket
+- Speech
+
+Individual skills can be developed independently.
 
 ## Perk System
 
-Each major skill has a perk tree.
+Each skill has its own perk progression.
 
-Perks specialize the character toward particular play styles and can substantially change combat, crafting, magic, stealth, and other capabilities.
+Perks allow players to specialize in different gameplay approaches.
+
+Examples include:
+
+- Weapon specialization
+- Armor specialization
+- Spell specialization
+- Stealth improvements
+- Crafting improvements
+- Alchemy improvements
+- Enchanting improvements
+
+Perks can substantially change how a build performs even when two characters have similar overall levels.
+
+## Attributes
+
+Character level-ups allow investment into:
+
+- Health
+- Magicka
+- Stamina
+
+Attribute allocation affects survivability, spellcasting capacity, stamina availability, and overall build specialization.
+
+Therefore, two characters at the same level can have significantly different capabilities.
 
 ## Skills and Abilities
 
-Skills directly influence character effectiveness.
+Character effectiveness depends on the combination of:
 
-Perks and skill investment provide specialization rather than forcing the player into a fixed class.
+- Skill levels
+- Perks
+- Attributes
+- Equipment
+- Spells
+- Enchantments
+- Character build
+
+Skill progression is therefore a major component of character power.
 
 ## Equipment Progression
 
-Weapons and armor are important components of character power.
+Equipment is a major source of character power.
 
-Equipment can be improved through crafting systems such as Smithing and can be enhanced through Enchanting.
+Important equipment categories include:
+
+- Weapons
+- Armor
+- Shields
+- Jewelry
+- Enchanted equipment
+
+Equipment can be improved through crafting systems.
+
+Higher-quality equipment and appropriate enchantments can substantially increase combat effectiveness.
+
+## Crafting Systems
+
+Skyrim contains three major crafting systems:
+
+### Smithing
+
+Used to improve weapons and armor and create equipment.
+
+### Enchanting
+
+Used to apply magical effects to weapons, armor, jewelry, and other equipment.
+
+### Alchemy
+
+Used to create potions and poisons from ingredients.
+
+Crafting can significantly affect character power and can create specialized builds.
 
 ## Combat Progression
 
 Combat effectiveness depends on:
+
 - Character level
-- Relevant skills
+- Relevant combat skills
 - Perks
+- Attributes
 - Weapons
 - Armor
 - Spells
 - Enchantments
 - Consumables
-- Player build
+- Character build
+- Player execution
+
+Character level alone is not a complete measure of combat power.
 
 ## Difficulty Scaling
 
 Skyrim provides selectable difficulty settings.
 
-Enemy encounters and combat challenge are influenced by character progression, enemy type, location, equipment, and difficulty setting.
+Combat difficulty is influenced by:
 
-Character level alone does not determine combat effectiveness.
+- Selected difficulty
+- Character progression
+- Enemy type
+- Enemy level
+- Location
+- Equipment
+- Skills
+- Perks
+- Build specialization
+
+Difficulty setting and character progression should therefore be treated as separate comparison variables.
+
+## Enemy Scaling
+
+Skyrim uses level-based progression for many enemies and encounters.
+
+Enemy strength can change according to the player's progression, although not every enemy scales identically.
+
+For cross-game comparison, enemy scaling should be evaluated separately from the player's character level.
 
 ## Quest Progression
 
-Skyrim contains:
+Skyrim contains multiple categories of quests:
+
 - Main quests
 - Faction quests
 - Side quests
-- Miscellaneous objectives
-- Expansion-related content
+- Miscellaneous quests
+- DLC quests
 
-Quest progression is relatively flexible and does not require following one linear character-level path.
+Quest progression is relatively flexible.
+
+Players can pursue different questlines and exploration activities in different orders.
+
+The wiki should not assign a recommended character level to a Skyrim quest unless that level is explicitly documented.
 
 ## World Progression
 
-The world can be explored extensively without following a single progression route.
+Skyrim provides an open-world progression structure.
 
-Locations, factions, quests, exploration, and character development can progress in different orders.
+Progression can occur through:
+
+- Main quests
+- Faction questlines
+- Side quests
+- Exploration
+- Dungeon activities
+- Character development
+- Crafting
+- Equipment upgrades
+- DLC content
+
+The player is not required to follow one fixed progression route.
 
 ## Resource Systems
 
 Important resources include:
+
 - Gold
 - Health
 - Magicka
 - Stamina
+- Potions
+- Poisons
+- Soul Gems
+- Crafting materials
 - Weapons
 - Armor
-- Potions
-- Crafting materials
-- Soul gems
 
-## Crafting Systems
+Resource management can influence combat preparation and character progression.
 
-Major crafting systems include:
-- Smithing
-- Enchanting
-- Alchemy
+## Build Specialization
 
-These systems can significantly influence equipment and character effectiveness.
+Skyrim supports highly different character builds.
+
+Examples include:
+
+- Warrior
+- Archer
+- Assassin
+- Mage
+- Battlemage
+- Stealth hybrid
+- Crafting-focused builds
+
+Build specialization can produce major differences between characters with the same character level.
 
 ## Endgame Progression
 
-Endgame progression can continue through:
+Progression can continue through:
+
 - Additional quests
 - Exploration
 - Skill development
@@ -119,20 +273,73 @@ Endgame progression can continue through:
 - Crafting
 - Equipment optimization
 - DLC content
+- Character build refinement
 
-## Comparison Notes
+There is no requirement that character progression ends immediately after completion of the main quest.
 
-For cross-game comparison use:
+## Comparison Variables
+
+For comparison with other games, use these dimensions:
+
+| System | Skyrim Comparison Variable |
+|---|---|
+| Leveling | Character Level + Skill Progression |
+| XP | Skill-based progression |
+| Class System | No fixed mandatory class |
+| Class Equivalent | Character Build + Skill Specialization |
+| Class Progression | Individual Skill Levels |
+| Skill Progression | Skill Use + Perks |
+| Attributes | Health + Magicka + Stamina |
+| Combat | Skills + Perks + Equipment + Build |
+| Equipment | Weapons + Armor + Enchantments |
+| Crafting | Smithing + Enchanting + Alchemy |
+| Difficulty | Difficulty Setting + Enemy Scaling |
+| Quest Progression | Main + Faction + Side + DLC |
+| World Progression | Open-world exploration + quests |
+| Endgame | Continued skills + quests + equipment + exploration |
+
+## Cross-Game Comparison Policy
+
+Skyrim character level should not automatically be treated as equivalent to another game's character level.
+
+For example:
+
+> "DD2 level 27 = Skyrim level X"
+
+must not be presented as a factual wiki result unless an explicit conversion methodology or documented benchmark exists.
+
+A valid comparison should consider:
+
 - Character level
 - Skill progression
-- Perks
+- Class or vocation progression
+- Perks and abilities
 - Equipment
-- Crafting
-- Difficulty
+- Attributes
 - Enemy scaling
+- Difficulty
 - Quest progression
+- World progression
 - Build specialization
+
+## Numerical Data Policy
+
+Numerical values must be verified against authoritative or explicitly documented sources before being treated as hard facts.
+
+Do not infer level equivalence solely from character level.
 
 ## Sources
 
-Structured reference for the Games Wiki. Verify exact numerical mechanics against authoritative game documentation before treating them as numerical facts.
+- Elder Scrolls Wiki — Skyrim character progression
+- Elder Scrolls Wiki — Skills
+- Elder Scrolls Wiki — Perks
+- Elder Scrolls Wiki — Leveling
+- Additional authoritative game documentation should be used to verify disputed numerical mechanics.
+
+## Verification Status
+
+This document contains structured system information intended for comparison.
+
+Qualitative progression relationships are documented.
+
+Specific numerical mechanics such as exact XP requirements, level caps, and cross-game level equivalence require additional authoritative verification before being used as hard numerical facts.
