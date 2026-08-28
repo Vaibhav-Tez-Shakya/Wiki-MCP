@@ -1,599 +1,280 @@
 from pathlib import Path
 import os
-from datetime import datetime
+import re
+from typing import Optional
 
 from mcp.server.mcpserver import MCPServer
 
-
-# ============================================================
-# PATHS
-# ============================================================
+try:
+    from chat_db import (
+        create_conversation,
+        save_message,
+        get_conversation_messages,
+        list_conversations,
+        get_conversation,
+    )
+except Exception:
+    create_conversation = save_message = get_conversation_messages = None
+    list_conversations = get_conversation = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 WIKI_DIR = BASE_DIR / "wiki-data"
-CHAT_HISTORY_DIR = BASE_DIR / "chat-history"
-
-
-# ============================================================
-# SERVER CONFIGURATION
-# ============================================================
-
-SERVER_TIER = os.getenv("MCP_TIER", "all").lower()
-
-VALID_TIERS = {
-    "tier1",
-    "tier2",
-    "tier3",
-    "all",
-}
-
-if SERVER_TIER not in VALID_TIERS:
-    raise ValueError(
-        f"Invalid MCP_TIER={SERVER_TIER}. "
-        f"Expected one of: {sorted(VALID_TIERS)}"
-    )
-
+CHAT_DIR = BASE_DIR / "chat-history"
 
 mcp = MCPServer(
-    name=f"Wiki MCP ({SERVER_TIER})",
-    version="1.0.0",
-    description="Tier-aware MCP server for the personal wiki with persistent chat history.",
+    name="Unified Wiki MCP",
+    version="2.0.0",
+    description=(
+        "Single MCP server for the persistent game wiki. The wiki is organized "
+        "into Tier 1 (indexes/general knowledge), Tier 2 (intermediate/detail), "
+        "and Tier 3 (deep/restricted detail). This server has access to all tiers. "
+        "Use max_tier to control retrieval depth: 1=Tier 1 only, 2=Tier 1+2, "
+        "3=Tier 1+2+3. Tier labels are organizational retrieval controls, not a "
+        "claim that Claude itself is a security boundary."
+    ),
 )
 
-
-# ============================================================
-# TIER CONFIGURATION
-# ============================================================
-
-TIER_PATHS = {
-    "tier1": ["tier1"],
-    "tier2": ["tier2"],
-    "tier3": ["tier3"],
-}
+VALID_TIERS = {1, 2, 3}
+TIER_NAMES = {1: "tier1", 2: "tier2", 3: "tier3"}
 
 
-# ============================================================
-# ACCESS CONTROL
-# ============================================================
-
-def get_allowed_tiers() -> set[str]:
-    if SERVER_TIER == "all":
-        return {"tier1", "tier2", "tier3"}
-
-    if SERVER_TIER == "tier1":
-        return {"tier1", "tier2", "tier3"}
-
-    if SERVER_TIER == "tier2":
-        return {"tier2", "tier3"}
-
-    if SERVER_TIER == "tier3":
-        return {"tier3"}
-
-    return set()
+def normalize_max_tier(max_tier: int) -> int:
+    return max(1, min(int(max_tier), 3))
 
 
-def get_file_tier(path: Path) -> str | None:
+def get_file_tier(path: Path) -> Optional[int]:
     try:
         relative = path.relative_to(WIKI_DIR).as_posix()
     except ValueError:
         return None
-
-    for tier, prefixes in TIER_PATHS.items():
-        for prefix in prefixes:
-            prefix = prefix.strip("/")
-
-            if (
-                relative == prefix
-                or relative.startswith(prefix + "/")
-            ):
-                return tier
-
+    first = relative.split("/", 1)[0].lower()
+    if first in TIER_NAMES.values():
+        return int(first[-1])
     return None
 
 
-def is_file_allowed(path: Path) -> bool:
-    tier = get_file_tier(path)
-
-    if tier is None:
-        return False
-
-    return tier in get_allowed_tiers()
-
-
-# ============================================================
-# FILE DISCOVERY
-# ============================================================
-
-def get_allowed_files() -> list[Path]:
+def get_allowed_files(max_tier: int = 3) -> list[Path]:
+    max_tier = normalize_max_tier(max_tier)
     if not WIKI_DIR.exists():
         return []
-
-    files = []
-
-    for path in WIKI_DIR.rglob("*.md"):
-        if is_file_allowed(path):
-            files.append(path)
-
-    return sorted(files)
+    return sorted(
+        p for p in WIKI_DIR.rglob("*.md")
+        if (get_file_tier(p) or 99) <= max_tier
+    )
 
 
-# ============================================================
-# SAFE PATH RESOLUTION
-# ============================================================
-
-def resolve_wiki_path(path: str) -> Path | None:
+def safe_path(relative_path: str) -> Optional[Path]:
+    requested = (WIKI_DIR / relative_path).resolve()
     try:
-        requested = (WIKI_DIR / path).resolve()
         requested.relative_to(WIKI_DIR.resolve())
-        return requested
-
     except ValueError:
         return None
+    return requested
 
 
-# ============================================================
-# CHAT HISTORY
-# ============================================================
+def excerpt(text: str, query: str, limit: int = 1400) -> str:
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    q = query.lower().strip()
+    pos = text.lower().find(q) if q else -1
+    start = max(0, pos - 400) if pos >= 0 else 0
+    return text[start:start + limit]
 
-def ensure_chat_history_dir():
-    CHAT_HISTORY_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-
-def create_chat_filename() -> Path:
-    ensure_chat_history_dir()
-
-    timestamp = datetime.now().strftime(
-        "%Y%m%d_%H%M%S_%f"
-    )
-
-    return CHAT_HISTORY_DIR / f"chat_{timestamp}.md"
-
-
-# ============================================================
-# MCP TOOLS
-# ============================================================
 
 @mcp.tool()
 def ping() -> str:
-    """
-    Check whether the Wiki MCP server is running.
-    """
-
+    """Check whether the unified Wiki MCP server is running."""
     return "pong"
 
 
 @mcp.tool()
-def wiki_status() -> str:
-    """
-    Return tier-aware information about the wiki.
-    """
-
-    if not WIKI_DIR.exists():
-        return f"Wiki directory not found: {WIKI_DIR}"
-
-    allowed_files = get_allowed_files()
-
-    tier_counts = {
-        "tier1": 0,
-        "tier2": 0,
-        "tier3": 0,
-    }
-
-    for path in allowed_files:
-        tier = get_file_tier(path)
-
-        if tier in tier_counts:
-            tier_counts[tier] += 1
-
-    allowed = ", ".join(
-        sorted(get_allowed_tiers())
-    )
-
-    return (
-        f"Wiki directory: {WIKI_DIR}\n"
-        f"MCP tier: {SERVER_TIER}\n"
-        f"Allowed tiers: {allowed}\n"
-        f"Accessible Markdown files: {len(allowed_files)}\n"
-        f"Tier 1 files: {tier_counts['tier1']}\n"
-        f"Tier 2 files: {tier_counts['tier2']}\n"
-        f"Tier 3 files: {tier_counts['tier3']}"
-    )
-
-
-@mcp.tool()
-def list_wiki_files(limit: int = 20) -> list[str]:
-    """
-    List Markdown files accessible to this MCP server.
-    """
-
-    limit = max(
-        1,
-        min(limit, 100),
-    )
-
-    files = [
-        path.relative_to(WIKI_DIR).as_posix()
-        for path in get_allowed_files()
-    ]
-
-    return files[:limit]
+def list_accessible_tiers() -> list[str]:
+    """Return all tiers available through this single unified MCP server."""
+    return ["tier1", "tier2", "tier3"]
 
 
 @mcp.tool()
 def get_file_tier_info(path: str) -> str:
-    """
-    Return the tier assigned to a wiki file and whether
-    this MCP server is allowed to access it.
-    """
-
-    requested = resolve_wiki_path(path)
-
+    """Return a wiki file's tier. This unified server can read all three tiers."""
+    requested = safe_path(path)
     if requested is None:
         return "Access denied: invalid path."
-
-    if not requested.exists():
+    if not requested.exists() or not requested.is_file():
         return "File not found."
-
-    if requested.suffix.lower() != ".md":
-        return "Access denied: only Markdown files are supported."
-
     tier = get_file_tier(requested)
-
     if tier is None:
-        return "Access denied: file has no assigned tier."
+        return "File has no recognized tier."
+    return f"File: {path}\nTier: tier{tier}\nAccess: allowed"
 
-    if not is_file_allowed(requested):
-        return (
-            f"Access denied: {path} belongs to {tier}, "
-            f"which this MCP server cannot access."
-        )
 
+@mcp.tool()
+def wiki_status() -> str:
+    """Return status and counts for the unified Tier 1/2/3 wiki."""
+    if not WIKI_DIR.exists():
+        return f"Wiki directory not found: {WIKI_DIR}"
+    counts = {1: 0, 2: 0, 3: 0}
+    for p in get_allowed_files(3):
+        tier = get_file_tier(p)
+        if tier in counts:
+            counts[tier] += 1
     return (
-        f"File: {path}\n"
-        f"Tier: {tier}\n"
-        f"Access: allowed"
+        f"Wiki directory: {WIKI_DIR}\n"
+        f"Mode: unified MCP (all tiers)\n"
+        f"Tier 1 files: {counts[1]}\n"
+        f"Tier 2 files: {counts[2]}\n"
+        f"Tier 3 files: {counts[3]}\n"
+        f"Total accessible files: {sum(counts.values())}"
     )
+
+
+@mcp.tool()
+def list_wiki_files(max_tier: int = 3, limit: int = 50) -> list[str]:
+    """List wiki Markdown files up to max_tier. max_tier 1, 2, or 3."""
+    limit = max(1, min(int(limit), 200))
+    return [p.relative_to(WIKI_DIR).as_posix() for p in get_allowed_files(max_tier)[:limit]]
 
 
 @mcp.tool()
 def read_wiki_file(path: str) -> str:
-    """
-    Read a Markdown file only when its tier is permitted
-    by this MCP server.
-    """
-
-    requested = resolve_wiki_path(path)
-
+    """Read a wiki Markdown file from any Tier 1/2/3 directory."""
+    requested = safe_path(path)
     if requested is None:
         return "Access denied: invalid path."
-
-    if not requested.exists():
+    if not requested.exists() or not requested.is_file():
         return "File not found."
-
-    if not requested.is_file():
-        return "Path is not a file."
-
     if requested.suffix.lower() != ".md":
         return "Access denied: only Markdown files are supported."
-
-    if not is_file_allowed(requested):
-
-        tier = get_file_tier(requested)
-
-        if tier is None:
-            return "Access denied: file has no assigned tier."
-
-        return (
-            f"Access denied: this MCP server cannot access "
-            f"{tier} data."
-        )
-
+    if get_file_tier(requested) is None:
+        return "Access denied: file has no assigned tier."
     try:
-        return requested.read_text(
-            encoding="utf-8"
-        )
-
+        return requested.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return "Unable to decode file as UTF-8."
 
-    except OSError as error:
-        return f"Unable to read file: {error}"
-
 
 @mcp.tool()
-def search_wiki(
-    query: str,
-    limit: int = 10,
-) -> list[dict]:
-    """
-    Search accessible Markdown files by filename
-    and content.
-
-    Only files permitted by the current MCP tier
-    are searched.
-    """
-
-    query = query.strip().lower()
-
+def search_wiki(query: str, max_tier: int = 3, limit: int = 10) -> list[dict]:
+    """Search wiki content by keyword. max_tier controls retrieval depth: 1=Tier 1, 2=Tier 1+2, 3=all tiers."""
+    query = query.strip()
     if not query:
         return []
-
-    limit = max(
-        1,
-        min(limit, 50),
-    )
-
+    limit = max(1, min(int(limit), 30))
+    terms = [t.lower() for t in re.findall(r"\w+", query) if len(t) > 1]
     results = []
-
-    for path in get_allowed_files():
-
+    for p in get_allowed_files(max_tier):
         try:
-            content = path.read_text(
-                encoding="utf-8"
-            )
-
-        except (
-            UnicodeDecodeError,
-            OSError,
-        ):
+            text = p.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
             continue
-
-        relative_path = (
-            path.relative_to(WIKI_DIR)
-            .as_posix()
-        )
-
-        filename_match = (
-            query in path.stem.lower()
-        )
-
-        content_lower = content.lower()
-
-        content_match = (
-            query in content_lower
-        )
-
-        if not filename_match and not content_match:
-            continue
-
-        tier = get_file_tier(path)
-
-        snippet = ""
-
-        if content_match:
-
-            index = content_lower.find(query)
-
-            start = max(
-                0,
-                index - 150,
-            )
-
-            end = min(
-                len(content),
-                index + len(query) + 300,
-            )
-
-            snippet = (
-                content[start:end]
-                .replace("\n", " ")
-                .strip()
-            )
-
-        results.append(
-            {
-                "path": relative_path,
-                "tier": tier,
-                "filename_match": filename_match,
-                "snippet": snippet,
-            }
-        )
-
-        if len(results) >= limit:
-            break
-
-    return results
+        lower = text.lower()
+        score = sum(lower.count(t) for t in terms)
+        if score:
+            results.append({
+                "path": p.relative_to(WIKI_DIR).as_posix(),
+                "tier": get_file_tier(p),
+                "score": score,
+                "excerpt": excerpt(text, query),
+            })
+    results.sort(key=lambda x: (-x["score"], x["path"]))
+    return results[:limit]
 
 
 @mcp.tool()
-def list_accessible_tiers() -> list[str]:
-    """
-    Return the tiers accessible through this MCP server.
-    """
-
-    return sorted(
-        get_allowed_tiers()
-    )
-
-
-@mcp.tool()
-def count_wiki_files() -> dict:
-    """
-    Return the number of accessible Markdown files
-    grouped by tier.
-    """
-
-    counts = {
-        "tier1": 0,
-        "tier2": 0,
-        "tier3": 0,
-        "total": 0,
-    }
-
-    for path in get_allowed_files():
-
-        tier = get_file_tier(path)
-
-        if tier in {
-            "tier1",
-            "tier2",
-            "tier3",
-        }:
-
-            counts[tier] += 1
-            counts["total"] += 1
-
-    return counts
-
-
-# ============================================================
-# CHAT HISTORY TOOLS
-# ============================================================
-
-@mcp.tool()
-def save_chat(
-    user_message: str,
-    assistant_response: str,
-) -> str:
-    """
-    Save a Claude conversation turn to the local
-    chat-history directory.
-
-    The user message and Claude's response are stored
-    together in a Markdown file.
-    """
-
-    user_message = user_message.strip()
-    assistant_response = assistant_response.strip()
-
-    if not user_message:
-        return "Error: user_message cannot be empty."
-
-    if not assistant_response:
-        return "Error: assistant_response cannot be empty."
-
-    chat_file = create_chat_filename()
-
-    timestamp = datetime.now().astimezone().isoformat(
-        timespec="seconds"
-    )
-
-    content = f"""# Wiki Chat
-
-**Date:** {timestamp}
-
-## User
-
-{user_message}
-
-## Claude
-
-{assistant_response}
-"""
-
-    try:
-        chat_file.write_text(
-            content,
-            encoding="utf-8",
-        )
-
-        return (
-            f"Chat saved successfully.\n"
-            f"File: {chat_file.relative_to(BASE_DIR).as_posix()}"
-        )
-
-    except OSError as error:
-        return f"Unable to save chat: {error}"
-
-
-@mcp.tool()
-def list_chat_history(limit: int = 20) -> list[str]:
-    """
-    List saved chat history files.
-    """
-
-    ensure_chat_history_dir()
-
-    limit = max(
-        1,
-        min(limit, 100),
-    )
-
-    files = sorted(
-        CHAT_HISTORY_DIR.glob("chat_*.md"),
-        reverse=True,
-    )
-
-    return [
-        path.relative_to(BASE_DIR).as_posix()
-        for path in files[:limit]
-    ]
-
-
-@mcp.tool()
-def read_chat_history(filename: str) -> str:
-    """
-    Read a previously saved chat history file.
-    """
-
-    try:
-        requested = (
-            CHAT_HISTORY_DIR / filename
-        ).resolve()
-
-        requested.relative_to(
-            CHAT_HISTORY_DIR.resolve()
-        )
-
-    except ValueError:
-        return "Access denied: invalid chat history path."
-
-    if not requested.exists():
-        return "Chat history file not found."
-
-    if not requested.is_file():
-        return "Path is not a file."
-
-    if requested.suffix.lower() != ".md":
-        return "Only Markdown chat history files are supported."
-
-    try:
-        return requested.read_text(
-            encoding="utf-8"
-        )
-
-    except UnicodeDecodeError:
-        return "Unable to decode chat history as UTF-8."
-
-    except OSError as error:
-        return f"Unable to read chat history: {error}"
+def get_context(query: str, max_tier: int = 3, limit: int = 5) -> str:
+    """Build a compact context from the best wiki search results for a question."""
+    results = search_wiki(query, max_tier=max_tier, limit=limit)
+    if not results:
+        return "No matching wiki context found."
+    chunks = []
+    for r in results:
+        chunks.append(f"[{r['path']} | Tier {r['tier']}]\n{r['excerpt']}")
+    return "\n\n---\n\n".join(chunks)
 
 
 @mcp.tool()
 def chat_history_status() -> str:
-    """
-    Return information about the local chat history.
-    """
+    """Return the status of file-based and PostgreSQL chat history."""
+    files = sorted(CHAT_DIR.glob("*.md")) if CHAT_DIR.exists() else []
+    db_status = "PostgreSQL chat DB unavailable"
+    db_count = None
+    if list_conversations:
+        try:
+            rows = list_conversations()
+            db_count = len(rows)
+            db_status = f"PostgreSQL conversations: {db_count}"
+        except Exception as exc:
+            db_status = f"PostgreSQL check failed: {exc}"
+    return f"Chat-history files: {len(files)}\n{db_status}\nDirectory: {CHAT_DIR}"
 
-    ensure_chat_history_dir()
 
-    files = list(
-        CHAT_HISTORY_DIR.glob("chat_*.md")
+@mcp.tool()
+def list_chat_history(limit: int = 20) -> list[str]:
+    """List saved Markdown chat-history files from the project chat-history directory."""
+    limit = max(1, min(int(limit), 100))
+    if not CHAT_DIR.exists():
+        return []
+    return [p.name for p in sorted(CHAT_DIR.glob("*.md"), reverse=True)[:limit]]
+
+
+@mcp.tool()
+def read_chat_history(filename: str) -> str:
+    """Read one saved Markdown chat-history file."""
+    requested = (CHAT_DIR / filename).resolve()
+    try:
+        requested.relative_to(CHAT_DIR.resolve())
+    except ValueError:
+        return "Access denied: invalid chat-history path."
+    if requested.suffix.lower() != ".md" or not requested.exists():
+        return "Chat-history file not found."
+    return requested.read_text(encoding="utf-8")
+
+
+@mcp.tool()
+def save_chat(user_message: str, assistant_response: str, conversation_id: Optional[int] = None, title: Optional[str] = None) -> str:
+    """Persist one chat turn. Saves a Markdown copy locally and, when DATABASE_URL is configured, also saves the turn in PostgreSQL."""
+    CHAT_DIR.mkdir(parents=True, exist_ok=True)
+    import datetime
+    now = datetime.datetime.now(datetime.timezone.utc)
+    stamp = now.strftime("%Y%m%d_%H%M%S_%f")
+    filename = f"chat_{stamp}.md"
+    content = (
+        f"# Chat Turn\n\n"
+        f"**Timestamp:** {now.isoformat()}\n\n"
+        f"**User:**\n{user_message.strip()}\n\n"
+        f"**Assistant:**\n{assistant_response.strip()}\n"
     )
+    (CHAT_DIR / filename).write_text(content, encoding="utf-8")
 
-    return (
-        f"Chat history directory: {CHAT_HISTORY_DIR}\n"
-        f"Saved conversations: {len(files)}"
-    )
+    db_result = "PostgreSQL not configured"
+    if save_message and create_conversation:
+        try:
+            if conversation_id is None:
+                conversation_id = create_conversation(title or "Claude Wiki Chat")
+            save_message(conversation_id, "user", user_message)
+            save_message(conversation_id, "assistant", assistant_response)
+            db_result = f"PostgreSQL conversation_id={conversation_id}"
+        except Exception as exc:
+            db_result = f"PostgreSQL save failed: {exc}"
+    return f"Saved: chat-history/{filename}\n{db_result}"
 
 
-# ============================================================
-# SERVER ENTRY POINT
-# ============================================================
+@mcp.tool()
+def read_database_chat_history(conversation_id: int) -> str:
+    """Read a PostgreSQL conversation by ID, when PostgreSQL chat persistence is configured."""
+    if not get_conversation_messages:
+        return "PostgreSQL chat database is unavailable."
+    try:
+        rows = get_conversation_messages(int(conversation_id))
+    except Exception as exc:
+        return f"Database error: {exc}"
+    if not rows:
+        return "No messages found."
+    return "\n\n".join(f"{role.upper()}: {content}\n[{created_at}]" for role, content, created_at in rows)
+
 
 if __name__ == "__main__":
-
-    port = int(
-        os.getenv(
-            "PORT",
-            "8000",
-        )
-    )
-
+    port = int(os.getenv("PORT", "8000"))
     mcp.run(
         transport="streamable-http",
         json_response=True,

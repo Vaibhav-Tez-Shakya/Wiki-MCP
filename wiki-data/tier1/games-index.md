@@ -45,3 +45,9 @@ All 5 games in this wiki, connected by genre. Open **Graph view** in Obsidian to
 
 ## See Also
 - [[quest-connections|Quest Connections & Similarities]] — cross-game and within-game quest clusters by theme
+
+
+## Added games
+
+- Red Dead Redemption 2 — story mission index
+- Assassin's Creed IV: Black Flag Resynced — main mission and side-mission index
