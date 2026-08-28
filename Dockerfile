@@ -12,4 +12,4 @@ COPY chat_db.py ./chat_db.py
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "src/server.py"]
+CMD ["python", "src/server_tier3.py"]
