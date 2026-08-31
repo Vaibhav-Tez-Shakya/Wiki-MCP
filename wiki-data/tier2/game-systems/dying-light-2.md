@@ -1,4 +1,4 @@
-﻿# Dying Light 2 — Game Systems
+# Dying Light 2 — Game Systems
 
 ## Leveling and XP
 

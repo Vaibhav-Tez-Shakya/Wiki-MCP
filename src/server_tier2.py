@@ -1,6 +1,7 @@
 ﻿from pathlib import Path
 import os
-import re
+import secrets
+import time
 from typing import Optional
 
 from mcp.server.mcpserver import MCPServer
@@ -24,17 +25,34 @@ CHAT_DIR = BASE_DIR / "chat-history"
 
 mcp = MCPServer(
     name="Wiki MCP Tier 2",
-    version="1.0.0",
+    version="1.1.0",
     description=(
-        "Tier 2+3 MCP server for the persistent game wiki. "
-        "This server can access Tier 2 and Tier 3 data. "
+        "Tier 2 MCP server for the persistent game wiki. "
+        "Tier 2 data is directly accessible. "
+        "Tier 3 data is restricted and requires an explicit permission "
+        "request followed by approval before retrieval. "
         "Tier 1 data is not accessible."
     ),
 )
 
 
-ALLOWED_TIERS = {2, 3}
-TIER_NAMES = {2: "tier2", 3: "tier3"}
+TIER2 = 2
+TIER3 = 3
+
+TIER_NAMES = {
+    TIER2: "tier2",
+    TIER3: "tier3",
+}
+
+# Direct retrieval/search is Tier 2 only.
+ALLOWED_DIRECT_TIERS = {TIER2}
+
+# Short-lived in-memory permission requests/tokens.
+# This is intentionally process-local for the first implementation.
+PENDING_TIER3_REQUESTS: dict[str, dict] = {}
+APPROVED_TIER3_TOKENS: dict[str, dict] = {}
+
+PERMISSION_TTL_SECONDS = 15 * 60
 
 
 def get_file_tier(path: Path) -> Optional[int]:
@@ -52,18 +70,28 @@ def get_file_tier(path: Path) -> Optional[int]:
     return None
 
 
-def get_allowed_files() -> list[Path]:
+def get_tier_files(tier: int) -> list[Path]:
     if not WIKI_DIR.exists():
         return []
 
-    return sorted(
-        p
-        for p in WIKI_DIR.rglob("*.md")
-        if get_file_tier(p) in ALLOWED_TIERS
-    )
+    tier_name = TIER_NAMES.get(tier)
+
+    if not tier_name:
+        return []
+
+    tier_dir = WIKI_DIR / tier_name
+
+    if not tier_dir.exists():
+        return []
+
+    return sorted(tier_dir.rglob("*.md"))
 
 
-def safe_tier2_path(relative_path: str) -> Optional[Path]:
+def get_allowed_files() -> list[Path]:
+    return get_tier_files(TIER2)
+
+
+def safe_path(relative_path: str) -> Optional[Path]:
     requested = (WIKI_DIR / relative_path).resolve()
 
     try:
@@ -71,9 +99,28 @@ def safe_tier2_path(relative_path: str) -> Optional[Path]:
     except ValueError:
         return None
 
-    tier = get_file_tier(requested)
+    return requested
 
-    if tier not in ALLOWED_TIERS:
+
+def safe_tier2_path(relative_path: str) -> Optional[Path]:
+    requested = safe_path(relative_path)
+
+    if requested is None:
+        return None
+
+    if get_file_tier(requested) != TIER2:
+        return None
+
+    return requested
+
+
+def safe_tier3_path(relative_path: str) -> Optional[Path]:
+    requested = safe_path(relative_path)
+
+    if requested is None:
+        return None
+
+    if get_file_tier(requested) != TIER3:
         return None
 
     return requested
@@ -93,6 +140,81 @@ def excerpt(text: str, query: str, limit: int = 1400) -> str:
     return text[start:start + limit]
 
 
+def cleanup_permission_state() -> None:
+    now = time.time()
+
+    expired_requests = [
+        request_id
+        for request_id, data in PENDING_TIER3_REQUESTS.items()
+        if data["expires_at"] <= now
+    ]
+
+    for request_id in expired_requests:
+        PENDING_TIER3_REQUESTS.pop(request_id, None)
+
+    expired_tokens = [
+        token
+        for token, data in APPROVED_TIER3_TOKENS.items()
+        if data["expires_at"] <= now
+    ]
+
+    for token in expired_tokens:
+        APPROVED_TIER3_TOKENS.pop(token, None)
+
+
+def find_tier3_matches(query: str, limit: int = 10) -> list[dict]:
+    query = query.strip()
+
+    if not query:
+        return []
+
+    limit = max(1, min(int(limit), 20))
+    results = []
+
+    for p in get_tier_files(TIER3):
+        try:
+            text = p.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            text = p.read_text(encoding="utf-8-sig")
+        except Exception:
+            continue
+
+        if query.lower() in text.lower():
+            relative = p.relative_to(WIKI_DIR).as_posix()
+
+            results.append(
+                {
+                    "path": relative,
+                    "tier": TIER3,
+                }
+            )
+
+            if len(results) >= limit:
+                break
+
+    return results
+
+
+def validate_tier3_token(access_token: str, path: str) -> bool:
+    cleanup_permission_state()
+
+    if not access_token:
+        return False
+
+    approval = APPROVED_TIER3_TOKENS.get(access_token)
+
+    if not approval:
+        return False
+
+    if approval["expires_at"] <= time.time():
+        APPROVED_TIER3_TOKENS.pop(access_token, None)
+        return False
+
+    normalized_path = path.replace("\\", "/")
+
+    return normalized_path in approval["paths"]
+
+
 @mcp.tool()
 def ping() -> str:
     """Check whether the Tier 2 MCP server is running."""
@@ -101,50 +223,56 @@ def ping() -> str:
 
 @mcp.tool()
 def list_accessible_tiers() -> list[str]:
-    """Return the tiers accessible through this MCP server."""
-    return ["tier2", "tier3"]
+    """Return directly accessible tiers. Tier 3 requires explicit approval."""
+    return ["tier2", "tier3 (approval required)"]
 
 
 @mcp.tool()
 def get_file_tier_info(path: str) -> str:
-    """Return tier information for an accessible wiki file."""
-    requested = safe_tier2_path(path)
+    """Return tier information without exposing restricted Tier 3 content."""
+    requested = safe_path(path)
 
     if requested is None:
-        return "Access denied: Tier 2+3 server cannot access this file."
+        return "Access denied: invalid wiki path."
 
     tier = get_file_tier(requested)
 
-    return f"File: {path}\nTier: tier{tier}\nAccess: allowed"
+    if tier == TIER2:
+        return f"File: {path}\nTier: tier2\nAccess: allowed"
+
+    if tier == TIER3:
+        return (
+            f"File: {path}\n"
+            "Tier: tier3\n"
+            "Access: permission required\n"
+            "Use request_tier3_access before retrieval."
+        )
+
+    return "Access denied: file has no assigned tier."
 
 
 @mcp.tool()
 def wiki_status() -> str:
-    """Return status and counts for Tier 2 and Tier 3 wiki data."""
+    """Return Tier 2 status and Tier 3 restricted-data count."""
     if not WIKI_DIR.exists():
         return f"Wiki directory not found: {WIKI_DIR}"
 
-    counts = {2: 0, 3: 0}
-
-    for p in get_allowed_files():
-        tier = get_file_tier(p)
-
-        if tier in counts:
-            counts[tier] += 1
+    tier2_count = len(get_tier_files(TIER2))
+    tier3_count = len(get_tier_files(TIER3))
 
     return (
-        "Mode: Tier 2 + Tier 3\n"
+        "Mode: Tier 2 with controlled Tier 3 escalation\n"
         "Tier 1 access: denied\n"
-        f"Tier 2 files: {counts[2]}\n"
-        f"Tier 3 files: {counts[3]}\n"
-        f"Total accessible files: {counts[2] + counts[3]}\n"
+        f"Tier 2 files: {tier2_count}\n"
+        f"Tier 3 files: {tier3_count}\n"
+        "Tier 3 direct retrieval: denied without approval\n"
         f"Wiki directory: {WIKI_DIR}"
     )
 
 
 @mcp.tool()
 def list_wiki_files(limit: int = 50) -> list[str]:
-    """List accessible Tier 2 and Tier 3 Markdown files."""
+    """List directly accessible Tier 2 Markdown files."""
     limit = max(1, min(int(limit), 200))
 
     return [
@@ -154,12 +282,127 @@ def list_wiki_files(limit: int = 50) -> list[str]:
 
 
 @mcp.tool()
-def read_wiki_file(path: str) -> str:
-    """Read a Tier 2 or Tier 3 wiki file."""
-    requested = safe_tier2_path(path)
+def request_tier3_access(
+    query: str,
+    limit: int = 10,
+) -> str:
+    """
+    Check whether the requested information appears to exist in Tier 3.
+
+    This tool does not disclose Tier 3 content. It creates a short-lived
+    permission request that must be explicitly approved before retrieval.
+    """
+    cleanup_permission_state()
+
+    query = query.strip()
+
+    if not query:
+        return "Permission request denied: query is empty."
+
+    matches = find_tier3_matches(query, limit=limit)
+
+    if not matches:
+        return (
+            "No Tier 3 match found for the requested query. "
+            "No permission request was created."
+        )
+
+    request_id = secrets.token_urlsafe(16)
+    expires_at = time.time() + PERMISSION_TTL_SECONDS
+
+    PENDING_TIER3_REQUESTS[request_id] = {
+        "query": query,
+        "paths": [item["path"] for item in matches],
+        "expires_at": expires_at,
+    }
+
+    paths_text = "\n".join(
+        f"- {item['path']}"
+        for item in matches
+    )
+
+    return (
+        "PERMISSION REQUIRED\n"
+        f"Request ID: {request_id}\n"
+        "Tier: tier3\n"
+        f"Query: {query}\n"
+        "Matching restricted files:\n"
+        f"{paths_text}\n"
+        "\n"
+        "No Tier 3 content has been disclosed.\n"
+        "Call approve_tier3_access with this Request ID only after "
+        "explicit user approval."
+    )
+
+
+@mcp.tool()
+def approve_tier3_access(request_id: str) -> str:
+    """
+    Explicitly approve a pending Tier 3 access request and issue
+    a short-lived retrieval token.
+    """
+    cleanup_permission_state()
+
+    request_id = request_id.strip()
+
+    request = PENDING_TIER3_REQUESTS.get(request_id)
+
+    if not request:
+        return (
+            "Approval denied: request ID is invalid, expired, "
+            "or already removed."
+        )
+
+    access_token = secrets.token_urlsafe(24)
+    expires_at = time.time() + PERMISSION_TTL_SECONDS
+
+    APPROVED_TIER3_TOKENS[access_token] = {
+        "paths": set(request["paths"]),
+        "query": request["query"],
+        "expires_at": expires_at,
+    }
+
+    PENDING_TIER3_REQUESTS.pop(request_id, None)
+
+    return (
+        "TIER 3 ACCESS APPROVED\n"
+        f"Request ID: {request_id}\n"
+        f"Access token: {access_token}\n"
+        f"Expires in: {PERMISSION_TTL_SECONDS} seconds\n"
+        "Use this token with read_wiki_file for the approved Tier 3 file(s)."
+    )
+
+
+@mcp.tool()
+def read_wiki_file(
+    path: str,
+    access_token: str = "",
+) -> str:
+    """
+    Read a Tier 2 file directly.
+
+    Tier 3 files require a valid short-lived approval token issued by
+    approve_tier3_access.
+    """
+    requested = safe_path(path)
 
     if requested is None:
-        return "Access denied: Tier 1 files are not accessible."
+        return "Access denied: invalid wiki path."
+
+    tier = get_file_tier(requested)
+
+    if tier == TIER2:
+        pass
+
+    elif tier == TIER3:
+        if not validate_tier3_token(access_token, path):
+            return (
+                "Access denied: Tier 3 permission is required.\n"
+                "Use request_tier3_access followed by explicit approval."
+            )
+
+    else:
+        return "Access denied: file has no assigned tier."
 
     if not requested.is_file():
         return "File not found."
@@ -168,6 +411,8 @@ def read_wiki_file(path: str) -> str:
         return requested.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return requested.read_text(encoding="utf-8-sig")
+    except Exception as exc:
+        return f"Read error: {exc}"
 
 
 @mcp.tool()
@@ -175,7 +420,11 @@ def search_wiki(
     query: str,
     limit: int = 10,
 ) -> list[dict]:
-    """Search accessible Tier 2 and Tier 3 wiki content."""
+    """
+    Search Tier 2 only.
+
+    Tier 3 is never silently searched or returned by this tool.
+    """
     query = query.strip()
 
     if not query:
@@ -194,12 +443,10 @@ def search_wiki(
             continue
 
         if query.lower() in text.lower():
-            tier = get_file_tier(p)
-
             results.append(
                 {
                     "path": p.relative_to(WIKI_DIR).as_posix(),
-                    "tier": tier,
+                    "tier": TIER2,
                     "excerpt": excerpt(text, query),
                 }
             )
@@ -215,11 +462,15 @@ def get_context(
     query: str,
     limit: int = 5,
 ) -> str:
-    """Return concise context from accessible Tier 2 and Tier 3 files."""
+    """Return concise context from Tier 2 only."""
     results = search_wiki(query, limit=limit)
 
     if not results:
-        return "No matching Tier 2 or Tier 3 wiki content found."
+        return (
+            "No matching Tier 2 wiki content found. "
+            "Tier 3 content is restricted and is not searched automatically. "
+            "Use request_tier3_access to request restricted access."
+        )
 
     chunks = []
 

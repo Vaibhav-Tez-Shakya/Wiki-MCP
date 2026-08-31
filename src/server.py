@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 import re
 from typing import Optional
@@ -26,7 +26,7 @@ mcp = MCPServer(
     version="2.0.0",
     description=(
         "Single MCP server for the persistent game wiki. The wiki is organized "
-        "into Tier 1 (indexes/general knowledge), Tier 2 (intermediate/detail), "
+        "into Tier 1 (complete/full-access dataset), Tier 2 (intermediate/detail), "
         "and Tier 3 (deep/restricted detail). This server has access to all tiers. "
         "Use max_tier to control retrieval depth: 1=Tier 1 only, 2=Tier 1+2, "
         "3=Tier 1+2+3. Tier labels are organizational retrieval controls, not a "
@@ -282,3 +282,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
+

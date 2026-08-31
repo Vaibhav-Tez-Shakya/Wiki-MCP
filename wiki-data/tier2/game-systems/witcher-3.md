@@ -1,4 +1,4 @@
-﻿# The Witcher 3: Wild Hunt — Game Systems
+# The Witcher 3: Wild Hunt — Game Systems
 
 ## Leveling and XP
 

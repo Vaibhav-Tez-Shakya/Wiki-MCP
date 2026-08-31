@@ -1,14 +1,14 @@
----
+﻿---
 genres: [Action-Adventure, Third-Person Shooter, Linear/Cinematic]
 tags: [game/uncharted-4, genre/action-adventure, genre/tps, genre/linear]
 ---
 
-# Uncharted 4: A Thief's End — Chapter Index
+# Uncharted 4: A Thief's End â€” Chapter Index
 
 **Genres:** #genre/action-adventure #genre/tps #genre/linear
-**See also:** [[games-index|Games Index]] · [[quest-connections|Quest Connections & Similarities]]
+**See also:** [[games-index|Games Index]] Â· [[quest-connections|Quest Connections & Similarities]]
 
-Uncharted 4 is a linear, story-driven game with no branching quest system — its structural unit is the **chapter**, and this index treats chapters the way the wiki treats quests for other games.
+Uncharted 4 is a linear, story-driven game with no branching quest system â€” its structural unit is the **chapter**, and this index treats chapters the way the wiki treats quests for other games.
 
 
 ## Chapters
@@ -18,7 +18,7 @@ Uncharted 4 is a linear, story-driven game with no branching quest system — it
 - [Chapter 02: Infernal Place](uncharted-4-chapters/chapter-02-infernal-place.md)
 - [Chapter 03: The Malaysia Job](uncharted-4-chapters/chapter-03-the-malaysia-job.md)
 - [Chapter 04: A Normal Life](uncharted-4-chapters/chapter-04-a-normal-life.md)
-- [Chapter 05: Hector Alcázar](uncharted-4-chapters/chapter-05-hector-alcázar.md)
+- [Chapter 05: Hector AlcÃ¡zar](uncharted-4-chapters/chapter-05-hector-alcazar.md)
 - [Chapter 06: Once a Thief...](uncharted-4-chapters/chapter-06-once-a-thief.md)
 - [Chapter 07: Lights Out](uncharted-4-chapters/chapter-07-lights-out.md)
 - [Chapter 08: The Grave of Henry Avery](uncharted-4-chapters/chapter-08-the-grave-of-henry-avery.md)
@@ -37,3 +37,4 @@ Uncharted 4 is a linear, story-driven game with no branching quest system — it
 - [Chapter 21: Brother's Keeper](uncharted-4-chapters/chapter-21-brothers-keeper.md)
 - [Chapter 22: A Thief's End](uncharted-4-chapters/chapter-22-a-thiefs-end.md)
 - [Epilogue](uncharted-4-chapters/epilogue.md)
+

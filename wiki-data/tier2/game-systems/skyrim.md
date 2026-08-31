@@ -1,4 +1,4 @@
-﻿# Skyrim — Game Systems
+# Skyrim — Game Systems
 
 ## Leveling and XP
 

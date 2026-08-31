@@ -1,4 +1,4 @@
-﻿# Uncharted 4 — Game Systems
+# Uncharted 4 — Game Systems
 
 ## Progression Overview
 

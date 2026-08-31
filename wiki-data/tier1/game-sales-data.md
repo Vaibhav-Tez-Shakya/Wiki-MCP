@@ -1,0 +1,101 @@
+﻿# Game Sales Data
+
+This file is the master sales reference used to classify game data into Tier 2 and Tier 3.
+
+## Sales Ranking
+
+| Rank | Game | Copies Sold | Source/Note |
+|---:|---|---:|---|
+| 1 | The Elder Scrolls V: Skyrim | 65+ million | Total game sales; Creation Club is part of Skyrim |
+| 1 | The Witcher 3: Wild Hunt | 65+ million | Total game sales |
+| 3 | Uncharted 4: A Thief's End | 18+ million | Total game sales |
+| 4 | Dying Light 2: Stay Human | 5+ million | Launch-month sales figure |
+| 5 | Dragon's Dogma 2 | 4+ million | Reported milestone by November 2025 |
+| 6 | Red Dead Redemption 2 | 87+ million | Take-Two reported 87M+ units sold-in worldwide |
+
+## Detailed Data
+
+### 1. Dragon's Dogma 2
+
+- Total Sales: 4+ million copies
+- Release: March 2024
+- Reported milestone: 4+ million units by November 2025
+- Classification basis: Individual game sales
+
+### 2. Dying Light 2: Stay Human
+
+- Total Sales: 5+ million copies during its launch month
+- Important: The 30+ million figure refers to the combined Dying Light franchise and must NOT be used as the sales figure for Dying Light 2 alone.
+- Classification basis: Individual game sales
+
+### 3. The Elder Scrolls V: Skyrim
+
+- Total Sales: 65+ million copies
+- The source wiki is specifically for Skyrim Creation Club content.
+- Creation Club is not treated as a separate game.
+- Classification basis: Skyrim game sales.
+
+### 4. Uncharted 4: A Thief's End
+
+- Total Sales: 18+ million copies
+- Classification basis: Individual game sales
+
+### 5. The Witcher 3: Wild Hunt
+
+- Total Sales: 65+ million copies
+- The 85+ million figure refers to the complete Witcher franchise and must NOT be used as the Witcher 3 individual-game figure.
+- Classification basis: Individual game sales
+
+## Tier Classification Rule
+
+Tier 1:
+- Contains the complete/master dataset for all games and all available wiki files.
+- Tier 1 is not restricted by sales ranking.
+
+Tier 2:
+- Contains complete game data for higher-selling games according to individual game sales.
+
+Tier 3:
+- Contains complete game data for lower-selling games according to individual game sales.
+
+Important:
+- Franchise-wide sales must not be substituted for individual game sales.
+- Creation Club is treated as Skyrim-related data, not as a separate game.
+- Files with the same filename must not be considered duplicates unless their content/hash is also identical.
+- A file must not be deleted merely because another game has a file with the same filename.
+- Tier 2 and Tier 3 classification should be performed at the game/dataset level, not by randomly splitting individual quest files.
+- RDR2 must be added to this sales table once its individual-game sales figure is established.
+
+## Current Classification Status
+
+Final rank-based classification: top 3 highest-selling classified games are Tier 2; bottom 3 are Tier 3.
+
+Current games:
+1. Skyrim — 65+ million
+2. The Witcher 3 — 65+ million
+3. Uncharted 4 — 18+ million
+4. Dying Light 2 — 5+ million
+5. Dragon's Dogma 2 — 4+ million
+6. Red Dead Redemption 2 — PENDING
+
+
+## Rank-Based Sales Classification
+
+For the current six classified games, sales tiers are assigned by individual-game sales ranking:
+
+- Tier 2: ranks 1–3, the three highest-selling classified games.
+- Tier 3: ranks 4–6, the three lower-selling classified games.
+- Tier 1: complete/master dataset for every classified game and all available wiki files.
+- Classification is based on individual game sales, not franchise-wide sales.
+- RDR2 is classified using its individual-game sales figure.
+
+### Final Classification
+
+| Tier | Game | Copies Sold |
+|---|---|---:|
+| Tier 2 | Red Dead Redemption 2 | 87+ million |
+| Tier 2 | The Elder Scrolls V: Skyrim | 65+ million |
+| Tier 2 | The Witcher 3: Wild Hunt | 65+ million |
+| Tier 3 | Uncharted 4: A Thief's End | 18+ million |
+| Tier 3 | Dying Light 2: Stay Human | 5+ million |
+| Tier 3 | Dragon's Dogma 2 | 4+ million |

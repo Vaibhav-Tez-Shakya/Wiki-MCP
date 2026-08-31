@@ -1,4 +1,4 @@
-﻿# Dragon's Dogma 2 — Game Systems
+# Dragon's Dogma 2 — Game Systems
 
 ## Leveling and XP
 
