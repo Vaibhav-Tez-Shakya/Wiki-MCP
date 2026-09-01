@@ -269,6 +269,37 @@ def read_chat_history(filename: str) -> str:
     return requested.read_text(encoding="utf-8")
 
 
+def write_chat_markdown(conversation_id):
+    if not get_conversation_messages:
+        raise RuntimeError("PostgreSQL chat database is unavailable.")
+
+    rows = get_conversation_messages(int(conversation_id))
+
+    CHAT_DIR.mkdir(parents=True, exist_ok=True)
+
+    filename = CHAT_DIR / ("conversation_" + str(conversation_id) + ".md")
+
+    lines = [
+        "# Claude Conversation " + str(conversation_id),
+        ""
+    ]
+
+    for role, content, created_at in rows:
+        lines.append("## " + str(role).capitalize())
+        lines.append("")
+        lines.append(str(content))
+        lines.append("")
+        lines.append("**Created:** " + str(created_at))
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    filename.write_text("\n".join(lines),
+        encoding="utf-8"
+    )
+
+    return filename
+
 @mcp.tool()
 def save_chat(
     user_message: str,
@@ -276,17 +307,11 @@ def save_chat(
     conversation_id: Optional[int] = None,
     title: Optional[str] = None,
 ) -> str:
-    """
-    Persist a Claude chat turn in PostgreSQL.
-
-    PostgreSQL is the single source of truth.
-    No Markdown transcript is created by this tool.
-    """
+    """Persist a Claude chat turn in PostgreSQL and refresh its Markdown file."""
     if not create_conversation or not save_message:
         return "Save failed: PostgreSQL chat database is unavailable."
 
     try:
-        # Create a new PostgreSQL conversation only for a genuinely new thread.
         if conversation_id is None:
             conversation_id = create_conversation(
                 title or "Claude Wiki Chat"
@@ -294,7 +319,6 @@ def save_chat(
 
         conversation_id = int(conversation_id)
 
-        # Persist both sides of the Claude turn.
         save_message(
             conversation_id,
             "user",
@@ -307,11 +331,14 @@ def save_chat(
             assistant_response,
         )
 
+        markdown_file = write_chat_markdown(conversation_id)
+
         return (
-            "Saved to PostgreSQL successfully.\n"
+            "Saved successfully.\n"
             f"Conversation ID: {conversation_id}\n"
             f"Title: {title or 'Claude Wiki Chat'}\n"
-            "Storage: PostgreSQL"
+            "Storage: PostgreSQL + Markdown\n"
+            f"File: {markdown_file.name}"
         )
 
     except Exception as exc:
@@ -343,14 +370,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
-
-
-
-
-
-
-
-
-
-
 
