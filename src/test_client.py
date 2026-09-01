@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import os
 
 from mcp import Client
@@ -54,7 +54,7 @@ async def main():
 
         print("\n[6] TIER 1 ACCESS TEST")
 
-        tier1_file = "tier1/games-index.md"
+        tier1_file = "tier1/assassins-creed-black-flag-resynced-index.md"
 
         result = await client.call_tool(
             "get_file_tier_info",
@@ -67,10 +67,7 @@ async def main():
 
         print("\n[7] TIER 2 ACCESS TEST")
 
-        tier2_file = (
-            "tier2/dragons-dogma-2-quests/"
-            "a-beggars-tale.md"
-        )
+        tier2_file = "tier2/game-systems/dragons-dogma-2.md"
 
         result = await client.call_tool(
             "get_file_tier_info",
@@ -83,7 +80,7 @@ async def main():
 
         print("\n[8] TIER 3 ACCESS TEST")
 
-        tier3_file = "tier3/a-grave-mistake.md"
+        tier3_file = "tier3/a-favor-for-radovid.md"
 
         result = await client.call_tool(
             "get_file_tier_info",
