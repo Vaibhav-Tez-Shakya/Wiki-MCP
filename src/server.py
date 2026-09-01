@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import os
 import re
 from typing import Optional
@@ -13,7 +13,8 @@ try:
         list_conversations,
         get_conversation,
     )
-except Exception:
+except Exception as exc:
+    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
     create_conversation = save_message = get_conversation_messages = None
     list_conversations = get_conversation = None
 
@@ -204,6 +205,7 @@ def chat_history_status() -> str:
             db_count = len(rows)
             db_status = f"PostgreSQL conversations: {db_count}"
         except Exception as exc:
+    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
             db_status = f"PostgreSQL check failed: {exc}"
     return f"Chat-history files: {len(files)}\n{db_status}\nDirectory: {CHAT_DIR}"
 
@@ -231,33 +233,99 @@ def read_chat_history(filename: str) -> str:
 
 
 @mcp.tool()
-def save_chat(user_message: str, assistant_response: str, conversation_id: Optional[int] = None, title: Optional[str] = None) -> str:
-    """Persist one chat turn. Saves a Markdown copy locally and, when DATABASE_URL is configured, also saves the turn in PostgreSQL."""
+def save_chat(
+    user_message: str,
+    assistant_response: str,
+    conversation_id: Optional[int] = None,
+    title: Optional[str] = None,
+) -> str:
+    """
+    Persist a Claude chat turn.
+
+    One conversation_id maps to one Markdown transcript.
+    New conversation -> new file.
+    Existing conversation -> append to the same file.
+    PostgreSQL uses the same conversation_id.
+    """
     CHAT_DIR.mkdir(parents=True, exist_ok=True)
+
     import datetime
+
     now = datetime.datetime.now(datetime.timezone.utc)
-    stamp = now.strftime("%Y%m%d_%H%M%S_%f")
-    filename = f"chat_{stamp}.md"
-    content = (
-        f"# Chat Turn\n\n"
-        f"**Timestamp:** {now.isoformat()}\n\n"
-        f"**User:**\n{user_message.strip()}\n\n"
-        f"**Assistant:**\n{assistant_response.strip()}\n"
-    )
-    (CHAT_DIR / filename).write_text(content, encoding="utf-8")
 
-    db_result = "PostgreSQL not configured"
-    if save_message and create_conversation:
+    # Create a conversation only when this is a genuinely new thread.
+    if conversation_id is None:
+        if not create_conversation:
+            return "Save failed: PostgreSQL chat database is unavailable."
+
         try:
-            if conversation_id is None:
-                conversation_id = create_conversation(title or "Claude Wiki Chat")
-            save_message(conversation_id, "user", user_message)
-            save_message(conversation_id, "assistant", assistant_response)
-            db_result = f"PostgreSQL conversation_id={conversation_id}"
+            conversation_id = create_conversation(
+                title or "Claude Wiki Chat"
+            )
         except Exception as exc:
-            db_result = f"PostgreSQL save failed: {exc}"
-    return f"Saved: chat-history/{filename}\n{db_result}"
+    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
+            return f"Save failed: could not create conversation: {exc}"
 
+    conversation_id = int(conversation_id)
+
+    # One thread = one Markdown file.
+    filename = f"thread_{conversation_id}.md"
+    filepath = CHAT_DIR / filename
+
+    # Create the file only for the first turn.
+    if not filepath.exists():
+        content = (
+            "# Claude Wiki Chat\n\n"
+            f"**Conversation ID:** {conversation_id}\n\n"
+            f"**Created:** {now.isoformat()}\n\n"
+            "---\n\n"
+            "## User\n\n"
+            f"{user_message.strip()}\n\n"
+            "## Assistant\n\n"
+            f"{assistant_response.strip()}\n\n"
+        )
+        filepath.write_text(content, encoding="utf-8")
+    else:
+        # Existing thread: append the next turn.
+        with filepath.open("a", encoding="utf-8") as f:
+            f.write(
+                "\n---\n\n"
+                "## User\n\n"
+                f"{user_message.strip()}\n\n"
+                "## Assistant\n\n"
+                f"{assistant_response.strip()}\n\n"
+            )
+
+    # Save the same turn to PostgreSQL.
+    db_result = "PostgreSQL not configured"
+
+    if save_message:
+        try:
+            save_message(
+                conversation_id,
+                "user",
+                user_message,
+            )
+
+            save_message(
+                conversation_id,
+                "assistant",
+                assistant_response,
+            )
+
+            db_result = (
+                f"PostgreSQL conversation_id={conversation_id}"
+            )
+
+        except Exception as exc:
+    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
+            db_result = f"PostgreSQL save failed: {exc}"
+
+    return (
+        f"Saved: chat-history/{filename}\n"
+        f"Conversation ID: {conversation_id}\n"
+        f"{db_result}"
+    )
 
 @mcp.tool()
 def read_database_chat_history(conversation_id: int) -> str:
@@ -267,6 +335,7 @@ def read_database_chat_history(conversation_id: int) -> str:
     try:
         rows = get_conversation_messages(int(conversation_id))
     except Exception as exc:
+    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
         return f"Database error: {exc}"
     if not rows:
         return "No messages found."
@@ -282,5 +351,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
 
 
