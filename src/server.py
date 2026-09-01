@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import sys
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -252,90 +252,48 @@ def save_chat(
     title: Optional[str] = None,
 ) -> str:
     """
-    Persist a Claude chat turn.
+    Persist a Claude chat turn in PostgreSQL.
 
-    One conversation_id maps to one Markdown transcript.
-    New conversation -> new file.
-    Existing conversation -> append to the same file.
-    PostgreSQL uses the same conversation_id.
+    PostgreSQL is the single source of truth.
+    No Markdown transcript is created by this tool.
     """
-    CHAT_DIR.mkdir(parents=True, exist_ok=True)
+    if not create_conversation or not save_message:
+        return "Save failed: PostgreSQL chat database is unavailable."
 
-    import datetime
-
-    now = datetime.datetime.now(datetime.timezone.utc)
-
-    # Create a conversation only when this is a genuinely new thread.
-    if conversation_id is None:
-        if not create_conversation:
-            return "Save failed: PostgreSQL chat database is unavailable."
-
-        try:
+    try:
+        # Create a new PostgreSQL conversation only for a genuinely new thread.
+        if conversation_id is None:
             conversation_id = create_conversation(
                 title or "Claude Wiki Chat"
             )
-        except Exception as exc:
-            return f"Save failed: could not create conversation: {exc}"
 
-    conversation_id = int(conversation_id)
+        conversation_id = int(conversation_id)
 
-    # One thread = one Markdown file.
-    filename = f"thread_{conversation_id}.md"
-    filepath = CHAT_DIR / filename
-
-    # Create the file only for the first turn.
-    if not filepath.exists():
-        content = (
-            "# Claude Wiki Chat\n\n"
-            f"**Conversation ID:** {conversation_id}\n\n"
-            f"**Created:** {now.isoformat()}\n\n"
-            "---\n\n"
-            "## User\n\n"
-            f"{user_message.strip()}\n\n"
-            "## Assistant\n\n"
-            f"{assistant_response.strip()}\n\n"
+        # Persist both sides of the Claude turn.
+        save_message(
+            conversation_id,
+            "user",
+            user_message,
         )
-        filepath.write_text(content, encoding="utf-8")
-    else:
-        # Existing thread: append the next turn.
-        with filepath.open("a", encoding="utf-8") as f:
-            f.write(
-                "\n---\n\n"
-                "## User\n\n"
-                f"{user_message.strip()}\n\n"
-                "## Assistant\n\n"
-                f"{assistant_response.strip()}\n\n"
-            )
 
-    # Save the same turn to PostgreSQL.
-    db_result = "PostgreSQL not configured"
+        save_message(
+            conversation_id,
+            "assistant",
+            assistant_response,
+        )
 
-    if save_message:
-        try:
-            save_message(
-                conversation_id,
-                "user",
-                user_message,
-            )
+        return (
+            "Saved to PostgreSQL successfully.\n"
+            f"Conversation ID: {conversation_id}\n"
+            f"Title: {title or 'Claude Wiki Chat'}\n"
+            "Storage: PostgreSQL"
+        )
 
-            save_message(
-                conversation_id,
-                "assistant",
-                assistant_response,
-            )
-
-            db_result = (
-                f"PostgreSQL conversation_id={conversation_id}"
-            )
-
-        except Exception as exc:
-            db_result = f"PostgreSQL save failed: {exc}"
-
-    return (
-        f"Saved: chat-history/{filename}\n"
-        f"Conversation ID: {conversation_id}\n"
-        f"{db_result}"
-    )
+    except Exception as exc:
+        return (
+            "Save failed: PostgreSQL transaction was not completed.\n"
+            f"Error: {type(exc).__name__}: {exc}"
+        )
 
 @mcp.tool()
 def read_database_chat_history(conversation_id: int) -> str:
@@ -360,6 +318,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
 
 
 
