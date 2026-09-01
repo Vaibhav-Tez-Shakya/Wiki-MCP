@@ -13,7 +13,8 @@ try:
         list_conversations,
         get_conversation,
     )
-except Exception:
+except Exception as exc:
+    print(f"CHAT DB IMPORT FAILED: {type(exc).__name__}: {exc}", flush=True)
     create_conversation = save_message = get_conversation_messages = None
     list_conversations = get_conversation = None
 
@@ -354,6 +355,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
 
 
 
