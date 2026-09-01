@@ -362,12 +362,77 @@ def read_database_chat_history(conversation_id: int) -> str:
 
 
 if __name__ == "__main__":
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.responses import PlainTextResponse, Response
+    from starlette.routing import Mount, Route
+
     port = int(os.getenv("PORT", "8000"))
-    mcp.run(
-        transport="streamable-http",
+
+    mcp_app = mcp.streamable_http_app(
+        streamable_http_path="/mcp",
         json_response=True,
         stateless_http=True,
         host="0.0.0.0",
-        port=port,
     )
 
+    def chat_history_index(request):
+        files = sorted(
+            CHAT_DIR.glob("*.md"),
+            key=lambda p: p.name,
+            reverse=True,
+        ) if CHAT_DIR.exists() else []
+
+        lines = [
+            "# Chat History",
+            "",
+            f"Total files: {len(files)}",
+            "",
+        ]
+
+        for file in files:
+            lines.append(file.name)
+
+        return PlainTextResponse("\n".join(lines) + "\n")
+
+    def chat_history_file(request):
+        filename = request.path_params["filename"]
+        requested = (CHAT_DIR / filename).resolve()
+
+        try:
+            requested.relative_to(CHAT_DIR.resolve())
+        except ValueError:
+            return PlainTextResponse(
+                "Access denied: invalid chat-history path.",
+                status_code=403,
+            )
+
+        if requested.suffix.lower() != ".md" or not requested.exists():
+            return PlainTextResponse(
+                "Chat-history file not found.",
+                status_code=404,
+            )
+
+        return Response(
+            requested.read_bytes(),
+            media_type="text/markdown; charset=utf-8",
+        )
+
+    routes = [
+        Route("/chat-history", chat_history_index, methods=["GET"]),
+        Route(
+            "/chat-history/{filename:path}",
+            chat_history_file,
+            methods=["GET"],
+        ),
+        Mount("/", app=mcp_app),
+    ]
+
+    app = Starlette(routes=routes)
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+        log_level="info",
+    )
