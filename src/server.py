@@ -17,6 +17,14 @@ except Exception:
     create_conversation = save_message = get_conversation_messages = None
     list_conversations = get_conversation = None
 
+print("CHAT DB CHECK:", flush=True)
+try:
+    import psycopg
+    print("DATABASE_URL SET:", bool(os.getenv("DATABASE_URL")), flush=True)
+    psycopg.connect(os.getenv("DATABASE_URL")).close()
+    print("POSTGRES CONNECTION: OK", flush=True)
+except Exception as exc:
+    print(f"POSTGRES CONNECTION FAILED: {exc}", flush=True)
 BASE_DIR = Path(__file__).resolve().parent.parent
 WIKI_DIR = BASE_DIR / "wiki-data"
 CHAT_DIR = BASE_DIR / "chat-history"
@@ -346,6 +354,8 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
+
 
 
 
