@@ -1,4 +1,4 @@
-import os
+﻿import os
 
 import psycopg
 from dotenv import load_dotenv
@@ -24,9 +24,22 @@ def init_chat_db():
                 CREATE TABLE IF NOT EXISTS conversations (
                     id SERIAL PRIMARY KEY,
                     title TEXT,
+                    session_id TEXT UNIQUE,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
+            """)
+
+            cur.execute("""
+                ALTER TABLE conversations
+                ADD COLUMN IF NOT EXISTS session_id TEXT
+            """)
+
+            cur.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_conversations_session_id
+                ON conversations(session_id)
+                WHERE session_id IS NOT NULL
             """)
 
             cur.execute("""
@@ -49,22 +62,55 @@ def init_chat_db():
         conn.commit()
 
 
-def create_conversation(title=None):
+def create_conversation(title=None, session_id=None):
     with get_connection() as conn:
         with conn.cursor() as cur:
+            if session_id:
+                cur.execute(
+                    """
+                    SELECT id
+                    FROM conversations
+                    WHERE session_id = %s
+                    """,
+                    (session_id,),
+                )
+
+                existing = cur.fetchone()
+
+                if existing:
+                    return existing[0]
+
             cur.execute(
                 """
-                INSERT INTO conversations (title)
-                VALUES (%s)
+                INSERT INTO conversations (title, session_id)
+                VALUES (%s, %s)
                 RETURNING id
                 """,
-                (title,),
+                (title, session_id),
             )
 
             conversation_id = cur.fetchone()[0]
             conn.commit()
 
             return conversation_id
+
+
+def get_conversation_by_session_id(session_id):
+    if not session_id:
+        return None
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, title, created_at, updated_at
+                FROM conversations
+                WHERE session_id = %s
+                """,
+                (session_id,),
+            )
+
+            return cur.fetchone()
 
 
 def save_message(conversation_id, role, content):
@@ -164,3 +210,4 @@ def get_conversation(conversation_id):
             )
 
             return cur.fetchone()
+

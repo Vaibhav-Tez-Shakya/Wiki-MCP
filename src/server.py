@@ -1,4 +1,4 @@
-﻿from starlette.responses import PlainTextResponse, Response
+﻿from starlette.responses import PlainTextResponse, Response, JSONResponse
 from pathlib import Path
 import sys
 
@@ -19,6 +19,7 @@ try:
         get_conversation_messages,
         list_conversations,
         get_conversation,
+        get_conversation_by_session_id,
     )
 except Exception as exc:
     print(f"CHAT DB IMPORT FAILED: {type(exc).__name__}: {exc}", flush=True)
@@ -28,6 +29,7 @@ except Exception as exc:
     get_conversation_messages = None
     list_conversations = None
     get_conversation = None
+    get_conversation_by_session_id = None
 
 print("CHAT DB CHECK:", flush=True)
 try:
@@ -301,6 +303,40 @@ def write_chat_markdown(conversation_id):
 
     return filename
 
+def persist_chat_turn(
+    user_message: str,
+    assistant_response: str,
+    conversation_id: Optional[int] = None,
+    title: Optional[str] = None,
+):
+    """Common persistence path used by both MCP save_chat and automatic hooks."""
+    if not create_conversation or not save_message:
+        raise RuntimeError("PostgreSQL chat database is unavailable.")
+
+    if conversation_id is None:
+        conversation_id = create_conversation(
+            title or "Claude Wiki Chat"
+        )
+
+    conversation_id = int(conversation_id)
+
+    save_message(
+        conversation_id,
+        "user",
+        user_message,
+    )
+
+    save_message(
+        conversation_id,
+        "assistant",
+        assistant_response,
+    )
+
+    markdown_file = write_chat_markdown(conversation_id)
+
+    return conversation_id, markdown_file
+
+
 @mcp.tool()
 def save_chat(
     user_message: str,
@@ -309,30 +345,13 @@ def save_chat(
     title: Optional[str] = None,
 ) -> str:
     """Persist a Claude chat turn in PostgreSQL and refresh its Markdown file."""
-    if not create_conversation or not save_message:
-        return "Save failed: PostgreSQL chat database is unavailable."
-
     try:
-        if conversation_id is None:
-            conversation_id = create_conversation(
-                title or "Claude Wiki Chat"
-            )
-
-        conversation_id = int(conversation_id)
-
-        save_message(
-            conversation_id,
-            "user",
-            user_message,
+        conversation_id, markdown_file = persist_chat_turn(
+            user_message=user_message,
+            assistant_response=assistant_response,
+            conversation_id=conversation_id,
+            title=title,
         )
-
-        save_message(
-            conversation_id,
-            "assistant",
-            assistant_response,
-        )
-
-        markdown_file = write_chat_markdown(conversation_id)
 
         return (
             "Saved successfully.\n"
@@ -383,6 +402,84 @@ def read_database_chat_history(conversation_id: int) -> str:
     if not rows:
         return "No messages found."
     return "\n\n".join(f"{role.upper()}: {content}\n[{created_at}]" for role, content, created_at in rows)
+
+
+@mcp.custom_route("/chat-save", methods=["POST"])
+async def chat_save(request):
+    """Receive an automatic Claude Code hook turn and persist it."""
+    expected_token = os.getenv("CHAT_SAVE_TOKEN")
+
+    if not expected_token:
+        return JSONResponse(
+            {"error": "CHAT_SAVE_TOKEN is not configured on the server."},
+            status_code=503,
+        )
+
+    supplied_token = request.headers.get("x-chat-save-token", "")
+
+    if supplied_token != expected_token:
+        return JSONResponse(
+            {"error": "Unauthorized."},
+            status_code=401,
+        )
+
+    try:
+        payload = await request.json()
+
+        user_message = str(payload.get("user_message", "")).strip()
+        assistant_response = str(payload.get("assistant_response", "")).strip()
+        session_id = str(payload.get("session_id", "")).strip()
+        conversation_id = payload.get("conversation_id")
+        title = payload.get("title") or "Claude Code Chat"
+
+        if not user_message:
+            return JSONResponse(
+                {"error": "user_message is required."},
+                status_code=400,
+            )
+
+        if not assistant_response:
+            return JSONResponse(
+                {"error": "assistant_response is required."},
+                status_code=400,
+            )
+
+        if conversation_id is None and session_id and get_conversation_by_session_id:
+            existing = get_conversation_by_session_id(session_id)
+            if existing:
+                conversation_id = existing[0]
+
+        if conversation_id is None:
+            conversation_id = create_conversation(
+                title,
+                session_id=session_id or None,
+            )
+
+        conversation_id, markdown_file = persist_chat_turn(
+            user_message=user_message,
+            assistant_response=assistant_response,
+            conversation_id=conversation_id,
+            title=title,
+        )
+
+        return JSONResponse(
+            {
+                "ok": True,
+                "conversation_id": conversation_id,
+                "session_id": session_id,
+                "file": markdown_file.name,
+                "storage": "PostgreSQL + Markdown",
+            }
+        )
+
+    except Exception as exc:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": f"{type(exc).__name__}: {exc}",
+            },
+            status_code=500,
+        )
 
 
 @mcp.custom_route("/chat-history", methods=["GET"])
@@ -440,4 +537,8 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
+
+
+
 
