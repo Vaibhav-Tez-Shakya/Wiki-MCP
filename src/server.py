@@ -12,6 +12,7 @@ from mcp.server.mcpserver import MCPServer
 
 try:
     from chat_db import (
+        init_chat_db,
         create_conversation,
         save_message,
         get_conversation_messages,
@@ -20,17 +21,41 @@ try:
     )
 except Exception as exc:
     print(f"CHAT DB IMPORT FAILED: {type(exc).__name__}: {exc}", flush=True)
-    create_conversation = save_message = get_conversation_messages = None
-    list_conversations = get_conversation = None
+    init_chat_db = None
+    create_conversation = None
+    save_message = None
+    get_conversation_messages = None
+    list_conversations = None
+    get_conversation = None
 
 print("CHAT DB CHECK:", flush=True)
 try:
     import psycopg
-    print("DATABASE_URL SET:", bool(os.getenv("DATABASE_URL")), flush=True)
-    psycopg.connect(os.getenv("DATABASE_URL")).close()
+
+    database_url = os.getenv("DATABASE_URL")
+
+    print("DATABASE_URL SET:", bool(database_url), flush=True)
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set")
+
+    psycopg.connect(database_url).close()
+
     print("POSTGRES CONNECTION: OK", flush=True)
+
+    if init_chat_db is None:
+        raise RuntimeError("init_chat_db is unavailable")
+
+    init_chat_db()
+
+    print("CHAT DB SCHEMA: OK", flush=True)
+
 except Exception as exc:
-    print(f"POSTGRES CONNECTION FAILED: {exc}", flush=True)
+    print(
+        f"CHAT DB INITIALIZATION FAILED: {type(exc).__name__}: {exc}",
+        flush=True,
+    )
+    raise
 BASE_DIR = Path(__file__).resolve().parent.parent
 WIKI_DIR = BASE_DIR / "wiki-data"
 CHAT_DIR = BASE_DIR / "chat-history"
@@ -318,6 +343,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
 
 
 
