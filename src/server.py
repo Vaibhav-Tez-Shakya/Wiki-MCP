@@ -204,7 +204,6 @@ def chat_history_status() -> str:
             db_count = len(rows)
             db_status = f"PostgreSQL conversations: {db_count}"
         except Exception as exc:
-    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
             db_status = f"PostgreSQL check failed: {exc}"
     return f"Chat-history files: {len(files)}\n{db_status}\nDirectory: {CHAT_DIR}"
 
@@ -262,7 +261,6 @@ def save_chat(
                 title or "Claude Wiki Chat"
             )
         except Exception as exc:
-    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
             return f"Save failed: could not create conversation: {exc}"
 
     conversation_id = int(conversation_id)
@@ -317,7 +315,6 @@ def save_chat(
             )
 
         except Exception as exc:
-    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
             db_result = f"PostgreSQL save failed: {exc}"
 
     return (
@@ -334,7 +331,6 @@ def read_database_chat_history(conversation_id: int) -> str:
     try:
         rows = get_conversation_messages(int(conversation_id))
     except Exception as exc:
-    print(f'CHAT DB IMPORT FAILED: {exc}', flush=True)
         return f"Database error: {exc}"
     if not rows:
         return "No messages found."
@@ -350,6 +346,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
 
 
 
