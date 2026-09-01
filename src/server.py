@@ -348,6 +348,29 @@ def save_chat(
             f"Error: {type(exc).__name__}: {exc}"
         )
 
+
+@mcp.tool()
+def list_database_conversations(limit: int = 20) -> list[dict]:
+    """List PostgreSQL chat conversations with IDs and timestamps."""
+    if not list_conversations:
+        return [{"error": "PostgreSQL chat database is unavailable."}]
+
+    try:
+        limit = max(1, min(int(limit), 100))
+        rows = list_conversations()[:limit]
+
+        return [
+            {
+                "conversation_id": conversation_id,
+                "title": title,
+                "created_at": str(created_at),
+                "updated_at": str(updated_at),
+            }
+            for conversation_id, title, created_at, updated_at in rows
+        ]
+    except Exception as exc:
+        return [{"error": f"{type(exc).__name__}: {exc}"}]
+
 @mcp.tool()
 def read_database_chat_history(conversation_id: int) -> str:
     """Read a PostgreSQL conversation by ID, when PostgreSQL chat persistence is configured."""
