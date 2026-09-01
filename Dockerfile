@@ -7,6 +7,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 COPY wiki-data ./wiki-data
+
+RUN echo "=== BUILD DATASET DEBUG ===" && \
+    echo "Tier1:" && find /app/wiki-data/tier1 -type f -name "*.md" | wc -l && \
+    echo "Tier2:" && find /app/wiki-data/tier2 -type f -name "*.md" | wc -l && \
+    echo "Tier3:" && find /app/wiki-data/tier3 -type f -name "*.md" | wc -l && \
+    echo "TOTAL:" && find /app/wiki-data -type f -name "*.md" | wc -l
 COPY chat-history ./chat-history
 COPY chat_db.py ./chat_db.py
 
