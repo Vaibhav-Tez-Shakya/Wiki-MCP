@@ -149,7 +149,7 @@ def save_message(conversation_id, role, content, turn_key=None):
                         (conversation_id, role, content, turn_key)
                     VALUES
                         (%s, %s, %s, %s)
-                    ON CONFLICT (conversation_id, turn_key)
+                    ON CONFLICT DO NOTHING
                     DO NOTHING
                     RETURNING id
                     """,
@@ -265,4 +265,5 @@ def get_conversation(conversation_id):
             )
 
             return cur.fetchone()
+
 
