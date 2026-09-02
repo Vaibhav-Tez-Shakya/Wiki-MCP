@@ -107,7 +107,7 @@ def create_conversation(title=None, session_id=None):
                     """
                     INSERT INTO conversations (title, session_id)
                     VALUES (%s, %s)
-                    ON CONFLICT (session_id)
+                    ON CONFLICT (session_id) WHERE session_id IS NOT NULL
                     DO UPDATE SET title = conversations.title
                     RETURNING id
                     """,
