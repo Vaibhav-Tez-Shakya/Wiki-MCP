@@ -491,6 +491,10 @@ async def chat_save(request):
         )
 
     except Exception as exc:
+        print(
+            f"CHAT SAVE FAILED: {type(exc).__name__}: {exc}",
+            flush=True,
+        )
         return JSONResponse(
             {
                 "ok": False,
