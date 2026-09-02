@@ -150,7 +150,6 @@ def save_message(conversation_id, role, content, turn_key=None):
                     VALUES
                         (%s, %s, %s, %s)
                     ON CONFLICT DO NOTHING
-                    DO NOTHING
                     RETURNING id
                     """,
                     (conversation_id, role, content, turn_key),
