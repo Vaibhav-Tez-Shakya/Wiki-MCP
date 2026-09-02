@@ -62,16 +62,44 @@ def get_allowed_files() -> list[Path]:
 
 
 def safe_tier3_path(relative_path: str) -> Optional[Path]:
-    requested = (WIKI_DIR / relative_path).resolve()
-
-    try:
-        requested.relative_to(WIKI_DIR.resolve())
-    except ValueError:
+    if not relative_path:
         return None
 
-    tier = get_file_tier(requested)
+    raw = str(relative_path).strip().replace("\\", "/")
 
-    if tier != 3:
+    # Normalize common MCP/model path formats.
+    prefixes = [
+        "/app/wiki-data/",
+        "wiki-data/",
+        "/wiki-data/",
+    ]
+
+    for prefix in prefixes:
+        if raw.lower().startswith(prefix):
+            raw = raw[len(prefix):]
+            break
+
+    # Explicitly reject other tiers.
+    first_part = raw.split("/", 1)[0].lower()
+    if first_part in {"tier1", "tier2"}:
+        return None
+
+    # Accept tier3/... paths.
+    if first_part == "tier3":
+        raw = raw[len("tier3/"):]
+
+
+    # Block absolute paths and traversal.
+    if not raw or raw.startswith("/") or ".." in Path(raw).parts:
+        return None
+
+    tier3_root = (WIKI_DIR / TIER3_NAME).resolve()
+    requested = (tier3_root / raw).resolve()
+
+    # Final containment check: ONLY tier3 is allowed.
+    try:
+        requested.relative_to(tier3_root)
+    except ValueError:
         return None
 
     return requested
