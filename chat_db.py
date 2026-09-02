@@ -59,6 +59,18 @@ def init_chat_db():
                 ON messages(conversation_id)
             """)
 
+            cur.execute("""
+                ALTER TABLE messages
+                ADD COLUMN IF NOT EXISTS turn_key TEXT
+            """)
+
+            cur.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_messages_conversation_turn_key
+                ON messages(conversation_id, turn_key)
+                WHERE turn_key IS NOT NULL
+            """)
+
         conn.commit()
 
 
@@ -68,32 +80,85 @@ def create_conversation(title=None, session_id=None):
             if session_id:
                 cur.execute(
                     """
-                    SELECT id
-                    FROM conversations
-                    WHERE session_id = %s
+                    INSERT INTO conversations (title, session_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (session_id)
+                    DO UPDATE SET title = conversations.title
+                    RETURNING id
                     """,
-                    (session_id,),
+                    (title, session_id),
                 )
-
-                existing = cur.fetchone()
-
-                if existing:
-                    return existing[0]
-
-            cur.execute(
-                """
-                INSERT INTO conversations (title, session_id)
-                VALUES (%s, %s)
-                RETURNING id
-                """,
-                (title, session_id),
-            )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO conversations (title, session_id)
+                    VALUES (%s, NULL)
+                    RETURNING id
+                    """,
+                    (title,),
+                )
 
             conversation_id = cur.fetchone()[0]
             conn.commit()
-
             return conversation_id
 
+def save_message(conversation_id, role, content, turn_key=None):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            if turn_key is None:
+                cur.execute(
+                    """
+                    INSERT INTO messages
+                        (conversation_id, role, content)
+                    VALUES
+                        (%s, %s, %s)
+                    RETURNING id
+                    """,
+                    (conversation_id, role, content),
+                )
+                message_id = cur.fetchone()[0]
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO messages
+                        (conversation_id, role, content, turn_key)
+                    VALUES
+                        (%s, %s, %s, %s)
+                    ON CONFLICT (conversation_id, turn_key)
+                    WHERE turn_key IS NOT NULL
+                    DO NOTHING
+                    RETURNING id
+                    """,
+                    (conversation_id, role, content, turn_key),
+                )
+
+                row = cur.fetchone()
+
+                if row is not None:
+                    message_id = row[0]
+                else:
+                    cur.execute(
+                        """
+                        SELECT id
+                        FROM messages
+                        WHERE conversation_id = %s
+                          AND turn_key = %s
+                        """,
+                        (conversation_id, turn_key),
+                    )
+                    message_id = cur.fetchone()[0]
+
+            cur.execute(
+                """
+                UPDATE conversations
+                SET updated_at = NOW()
+                WHERE id = %s
+                """,
+                (conversation_id,),
+            )
+
+            conn.commit()
+            return message_id
 
 def get_conversation_by_session_id(session_id):
     if not session_id:
@@ -109,38 +174,7 @@ def get_conversation_by_session_id(session_id):
                 """,
                 (session_id,),
             )
-
             return cur.fetchone()
-
-
-def save_message(conversation_id, role, content):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO messages
-                    (conversation_id, role, content)
-                VALUES
-                    (%s, %s, %s)
-                RETURNING id
-                """,
-                (conversation_id, role, content),
-            )
-
-            message_id = cur.fetchone()[0]
-
-            cur.execute(
-                """
-                UPDATE conversations
-                SET updated_at = NOW()
-                WHERE id = %s
-                """,
-                (conversation_id,),
-            )
-
-            conn.commit()
-
-            return message_id
 
 
 def get_conversation_messages(conversation_id):
@@ -155,7 +189,6 @@ def get_conversation_messages(conversation_id):
                 """,
                 (conversation_id,),
             )
-
             return cur.fetchall()
 
 
@@ -193,9 +226,7 @@ def list_conversations():
                 ORDER BY updated_at DESC
                 """
             )
-
             return cur.fetchall()
-
 
 def get_conversation(conversation_id):
     with get_connection() as conn:

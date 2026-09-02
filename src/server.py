@@ -6,6 +6,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 import os
+import hashlib
 import re
 from typing import Optional
 
@@ -308,6 +309,7 @@ def persist_chat_turn(
     assistant_response: str,
     conversation_id: Optional[int] = None,
     title: Optional[str] = None,
+    turn_key: Optional[str] = None,
 ):
     """Common persistence path used by both MCP save_chat and automatic hooks."""
     if not create_conversation or not save_message:
@@ -320,16 +322,28 @@ def persist_chat_turn(
 
     conversation_id = int(conversation_id)
 
+    if not turn_key:
+        raw_key = (
+            f"{conversation_id}|"
+            f"{user_message}|"
+            f"{assistant_response}"
+        )
+        turn_key = hashlib.sha256(
+            raw_key.encode("utf-8")
+        ).hexdigest()
+
     save_message(
         conversation_id,
         "user",
         user_message,
+        turn_key=f"{turn_key}:user",
     )
 
     save_message(
         conversation_id,
         "assistant",
         assistant_response,
+        turn_key=f"{turn_key}:assistant",
     )
 
     markdown_file = write_chat_markdown(conversation_id)
@@ -343,6 +357,7 @@ def save_chat(
     assistant_response: str,
     conversation_id: Optional[int] = None,
     title: Optional[str] = None,
+    turn_key: Optional[str] = None,
 ) -> str:
     """Persist a Claude chat turn in PostgreSQL and refresh its Markdown file."""
     try:
@@ -351,6 +366,7 @@ def save_chat(
             assistant_response=assistant_response,
             conversation_id=conversation_id,
             title=title,
+            turn_key=turn_key or None,
         )
 
         return (
@@ -430,6 +446,7 @@ async def chat_save(request):
         assistant_response = str(payload.get("assistant_response", "")).strip()
         session_id = str(payload.get("session_id", "")).strip()
         conversation_id = payload.get("conversation_id")
+        turn_key = str(payload.get("turn_key", "")).strip()
         title = payload.get("title") or "Claude Code Chat"
 
         if not user_message:
@@ -460,6 +477,7 @@ async def chat_save(request):
             assistant_response=assistant_response,
             conversation_id=conversation_id,
             title=title,
+            turn_key=turn_key or None,
         )
 
         return JSONResponse(
@@ -537,8 +555,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
-
-
-
-
 
