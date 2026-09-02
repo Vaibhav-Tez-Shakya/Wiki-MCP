@@ -64,6 +64,29 @@ def init_chat_db():
                 ADD COLUMN IF NOT EXISTS turn_key TEXT
             """)
 
+            # Normalize legacy duplicate turn keys before creating the
+            # production-safe unique index. Existing messages are preserved;
+            # only duplicate idempotency keys are cleared.
+            cur.execute("""
+                WITH ranked AS (
+                    SELECT
+                        id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY conversation_id, turn_key
+                            ORDER BY id
+                        ) AS rn
+                    FROM messages
+                    WHERE turn_key IS NOT NULL
+                )
+                UPDATE messages
+                SET turn_key = NULL
+                WHERE id IN (
+                    SELECT id
+                    FROM ranked
+                    WHERE rn > 1
+                )
+            """)
+
             cur.execute("""
                 DROP INDEX IF EXISTS idx_messages_conversation_turn_key
             """)
