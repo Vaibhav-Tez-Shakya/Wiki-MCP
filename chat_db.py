@@ -65,10 +65,12 @@ def init_chat_db():
             """)
 
             cur.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS
-                idx_messages_conversation_turn_key
+                DROP INDEX IF EXISTS idx_messages_conversation_turn_key
+            """)
+
+            cur.execute("""
+                CREATE UNIQUE INDEX idx_messages_conversation_turn_key
                 ON messages(conversation_id, turn_key)
-                WHERE turn_key IS NOT NULL
             """)
 
         conn.commit()
@@ -125,7 +127,6 @@ def save_message(conversation_id, role, content, turn_key=None):
                     VALUES
                         (%s, %s, %s, %s)
                     ON CONFLICT (conversation_id, turn_key)
-                    WHERE turn_key IS NOT NULL
                     DO NOTHING
                     RETURNING id
                     """,
