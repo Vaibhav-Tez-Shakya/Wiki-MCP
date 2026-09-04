@@ -66,6 +66,19 @@ class Auth0TokenVerifier(TokenVerifier):
                 },
             )
 
+            print(
+                "AUTH0 TOKEN CLAIMS:",
+                {
+                    "iss": payload.get("iss"),
+                    "aud": payload.get("aud"),
+                    "scope": payload.get("scope"),
+                    "permissions": payload.get("permissions"),
+                    "azp": payload.get("azp"),
+                    "sub": payload.get("sub"),
+                },
+                flush=True,
+            )
+
             expires_at = payload.get("exp")
 
             if expires_at is not None:
