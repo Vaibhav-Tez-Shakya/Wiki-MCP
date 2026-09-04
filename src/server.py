@@ -1,4 +1,4 @@
-﻿from starlette.responses import PlainTextResponse, Response, JSONResponse
+from starlette.responses import PlainTextResponse, Response, JSONResponse
 from pathlib import Path
 import sys
 
@@ -13,6 +13,28 @@ from typing import Optional
 from mcp.server.mcpserver import MCPServer
 from mcp.server.auth.settings import AuthSettings
 from src.auth0_verifier import Auth0TokenVerifier
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class AuthHeaderDebugMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        auth = request.headers.get("authorization")
+
+        print(
+            "AUTH DEBUG:",
+            {
+                "path": request.url.path,
+                "authorization_present": bool(auth),
+                "authorization_scheme": (
+                    auth.split(" ", 1)[0]
+                    if auth and " " in auth
+                    else None
+                ),
+            },
+            flush=True,
+        )
+
+        return await call_next(request)
 
 try:
     from chat_db import (
@@ -576,14 +598,20 @@ async def chat_history_file(request):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
 
-    mcp.run(
-        transport="streamable-http",
+    import uvicorn
+
+    app = mcp.streamable_http_app(
+        streamable_http_path="/mcp",
         json_response=True,
         stateless_http=True,
         host="0.0.0.0",
-        port=port,
     )
 
+    app.add_middleware(AuthHeaderDebugMiddleware)
 
-
-
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+        log_level="info",
+    )
