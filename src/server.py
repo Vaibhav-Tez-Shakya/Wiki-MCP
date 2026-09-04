@@ -118,7 +118,7 @@ mcp = MCPServer(
     token_verifier=Auth0TokenVerifier(),
     auth=AuthSettings(
         issuer_url=AUTH0_ISSUER,
-        resource_server_url=f"{AUTH0_AUDIENCE}/mcp",
+        resource_server_url=AUTH0_AUDIENCE,
         required_scopes=["read:wiki"],
     ),
 )
