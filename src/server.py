@@ -11,6 +11,8 @@ import re
 from typing import Optional
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.auth.settings import AuthSettings
+from src.auth0_verifier import Auth0TokenVerifier
 
 try:
     from chat_db import (
@@ -64,6 +66,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 WIKI_DIR = BASE_DIR / "wiki-data"
 CHAT_DIR = BASE_DIR / "chat-history"
 
+AUTH0_DOMAIN = os.getenv(
+    "AUTH0_DOMAIN",
+    "dev-njneq66wpnuymzo7.us.auth0.com",
+)
+
+AUTH0_ISSUER = os.getenv(
+    "AUTH0_ISSUER",
+    f"https://{AUTH0_DOMAIN}/",
+)
+
+AUTH0_AUDIENCE = os.getenv(
+    "AUTH0_AUDIENCE",
+    "https://wiki-mcp-ss2m.onrender.com",
+)
+
+
 mcp = MCPServer(
     name="Unified Wiki MCP",
     version="2.0.0",
@@ -74,6 +92,12 @@ mcp = MCPServer(
         "Use max_tier to control retrieval depth: 1=Tier 1 only, 2=Tier 1+2, "
         "3=Tier 1+2+3. Tier labels are organizational retrieval controls, not a "
         "claim that Claude itself is a security boundary."
+    ),
+    token_verifier=Auth0TokenVerifier(),
+    auth=AuthSettings(
+        issuer_url=AUTH0_ISSUER,
+        resource_server_url=f"{AUTH0_AUDIENCE}/mcp",
+        required_scopes=["read:wiki"],
     ),
 )
 
@@ -559,4 +583,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
     )
+
+
+
 
