@@ -6,6 +6,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 import os
+import secrets
 import hashlib
 import re
 from typing import Optional
@@ -13,6 +14,12 @@ from typing import Optional
 from mcp.server.mcpserver import MCPServer
 from mcp.server.auth.settings import AuthSettings
 from src.auth0_verifier import Auth0TokenVerifier
+from src.token_store import (
+    create_user_token,
+    init_token_db,
+    list_user_tokens,
+    revoke_user_token,
+)
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -594,6 +601,128 @@ async def chat_history_file(request):
         requested.read_bytes(),
         media_type="text/markdown; charset=utf-8",
     )
+
+# TEMPORARY TOKEN ADMIN ROUTES
+# Remove these routes after the first user token has been created and tested.
+
+def _check_token_admin(request):
+    expected = os.getenv("TOKEN_ADMIN_SECRET")
+
+    if not expected:
+        return JSONResponse(
+            {"error": "TOKEN_ADMIN_SECRET is not configured"},
+            status_code=503,
+        )
+
+    supplied = request.headers.get("x-token-admin-secret")
+
+    if not supplied or not secrets.compare_digest(supplied, expected):
+        return JSONResponse(
+            {"error": "Unauthorized"},
+            status_code=401,
+        )
+
+    return None
+
+
+async def admin_create_token(request):
+    denied = _check_token_admin(request)
+    if denied:
+        return denied
+
+    try:
+        body = await request.json()
+        user_id = str(body.get("user", "")).strip()
+
+        if not user_id:
+            return JSONResponse(
+                {"error": "Missing 'user'"},
+                status_code=400,
+            )
+
+        init_token_db()
+        token = create_user_token(user_id)
+
+        return JSONResponse(
+            {
+                "status": "created",
+                "user": user_id,
+                "token": token,
+                "warning": "Store this token securely. It will not be shown again.",
+            }
+        )
+
+    except Exception as exc:
+        return JSONResponse(
+            {"error": str(exc)},
+            status_code=500,
+        )
+
+
+async def admin_list_tokens(request):
+    denied = _check_token_admin(request)
+    if denied:
+        return denied
+
+    try:
+        init_token_db()
+        rows = list_user_tokens()
+
+        tokens = [
+            {
+                "id": row[0],
+                "user_id": row[1],
+                "status": row[2],
+                "created_at": row[3].isoformat() if row[3] else None,
+                "revoked_at": row[4].isoformat() if row[4] else None,
+            }
+            for row in rows
+        ]
+
+        return JSONResponse({"tokens": tokens})
+
+    except Exception as exc:
+        return JSONResponse(
+            {"error": str(exc)},
+            status_code=500,
+        )
+
+
+async def admin_revoke_token(request):
+    denied = _check_token_admin(request)
+    if denied:
+        return denied
+
+    try:
+        body = await request.json()
+        token_id = int(body.get("id"))
+
+        init_token_db()
+        changed = revoke_user_token(token_id)
+
+        return JSONResponse(
+            {
+                "status": "revoked" if changed else "not_found_or_already_revoked",
+                "id": token_id,
+            }
+        )
+
+    except (TypeError, ValueError):
+        return JSONResponse(
+            {"error": "Invalid token id"},
+            status_code=400,
+        )
+
+    except Exception as exc:
+        return JSONResponse(
+            {"error": str(exc)},
+            status_code=500,
+        )
+
+
+mcp.custom_route("/admin/token/create", methods=["POST"])(admin_create_token)
+mcp.custom_route("/admin/token/list", methods=["GET"])(admin_list_tokens)
+mcp.custom_route("/admin/token/revoke", methods=["POST"])(admin_revoke_token)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
