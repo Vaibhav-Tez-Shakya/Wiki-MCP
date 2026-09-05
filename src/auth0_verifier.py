@@ -6,20 +6,18 @@ import jwt
 
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 
+from token_store import init_token_db, validate_user_token
+
 
 class Auth0TokenVerifier(TokenVerifier):
     """
-    Validates Auth0 RS256 access tokens for the MCP resource server.
+    Validates both:
 
-    Validation performed:
-    - JWT signature using Auth0 JWKS
-    - RS256 algorithm
-    - issuer
-    - audience
-    - required JWT time claims
-    - expiration
-    - OAuth scopes
-    - Auth0 RBAC permissions
+    1. Revocable Wiki MCP user tokens.
+    2. Auth0 RS256 OAuth access tokens.
+
+    User tokens are opaque bearer credentials beginning with "wk_".
+    Auth0 JWT validation remains unchanged.
     """
 
     def __init__(self) -> None:
@@ -40,10 +38,54 @@ class Auth0TokenVerifier(TokenVerifier):
             self.jwks_url
         )
 
+        # Create the revocable-token table if it does not exist.
+        init_token_db()
+
     async def verify_token(
         self,
         token: str,
     ) -> AccessToken | None:
+
+        # ---------------------------------------------------------
+        # 1. Check our revocable user token first.
+        # ---------------------------------------------------------
+
+        if token.startswith("wk_"):
+            user_token = validate_user_token(token)
+
+            if user_token is None:
+                print(
+                    "USER TOKEN REJECTED: invalid or revoked token",
+                    flush=True,
+                )
+                return None
+
+            print(
+                "USER TOKEN ACCEPTED:",
+                {
+                    "token_id": user_token["id"],
+                    "user_id": user_token["user_id"],
+                },
+                flush=True,
+            )
+
+            return AccessToken(
+                token=token,
+                client_id=f"user-token-{user_token['id']}",
+                scopes=["read:wiki"],
+                expires_at=None,
+                resource=self.audience,
+                subject=str(user_token["user_id"]),
+                claims={
+                    "auth_type": "user_token",
+                    "token_id": user_token["id"],
+                    "user_id": user_token["user_id"],
+                },
+            )
+
+        # ---------------------------------------------------------
+        # 2. Existing Auth0 JWT validation.
+        # ---------------------------------------------------------
 
         try:
             signing_key = (
@@ -91,7 +133,6 @@ class Auth0TokenVerifier(TokenVerifier):
 
             scopes: set[str] = set()
 
-            # Standard OAuth scope claim.
             scope_claim = payload.get("scope", "")
 
             if isinstance(scope_claim, str):
@@ -108,7 +149,6 @@ class Auth0TokenVerifier(TokenVerifier):
                     if scope
                 )
 
-            # Auth0 RBAC permissions claim.
             permissions_claim = payload.get(
                 "permissions",
                 [],
